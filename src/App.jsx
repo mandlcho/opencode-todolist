@@ -9,9 +9,9 @@ const FILTERS = {
 };
 
 const CARD_COLUMNS = [
-  { key: "backlog", label: "Backlog" },
-  { key: "active", label: "Active" },
-  { key: "completed", label: "Completed" }
+  { key: "backlog", label: "backlog" },
+  { key: "active", label: "active" },
+  { key: "completed", label: "done" }
 ];
 
 const formatTimestamp = (value) => {
@@ -129,26 +129,26 @@ function App() {
     const isCard = variant === "card";
     const dismissAriaLabel =
       todo.status === "active"
-        ? `Return ${todo.title} to backlog`
-        : `Delete ${todo.title}`;
+        ? `return ${todo.title} to backlog`
+        : `delete ${todo.title}`;
     const footerActions = (
       <>
         {todo.status === "backlog" && (
           <button
             type="button"
             onClick={() => moveToActive(todo.id)}
-            aria-label={`Move ${todo.title} to active`}
+            aria-label={`start ${todo.title}`}
           >
-            Activate
+            start
           </button>
         )}
         {todo.status === "active" && (
           <button
             type="button"
             onClick={() => updateTodoStatus(todo.id, "completed")}
-            aria-label={`Mark ${todo.title} as completed`}
+            aria-label={`mark ${todo.title} as done`}
           >
-            Mark as Completed
+            done
           </button>
         )}
         {!isCard && (
@@ -194,11 +194,11 @@ function App() {
           </div>
           <div className="todo-footer card-footer">
             <div className="todo-meta">
-              <span>Created: {createdLabel || "Unknown"}</span>
+              <span>created: {createdLabel || "unknown"}</span>
               <span>
-                Activated: {activatedLabel ? activatedLabel : "Not yet"}
+                activated: {activatedLabel ? activatedLabel : "not yet"}
               </span>
-              {completedLabel && <span>Completed: {completedLabel}</span>}
+              {completedLabel && <span>done: {completedLabel}</span>}
             </div>
             {showFooterActions && (
               <div className="todo-actions card-actions">{footerActions}</div>
@@ -225,11 +225,11 @@ function App() {
         </div>
         <div className="todo-footer">
           <div className="todo-meta">
-            <span>Created: {createdLabel || "Unknown"}</span>
+            <span>created: {createdLabel || "unknown"}</span>
             <span>
-              Activated: {activatedLabel ? activatedLabel : "Not yet"}
+              activated: {activatedLabel ? activatedLabel : "not yet"}
             </span>
-            {completedLabel && <span>Completed: {completedLabel}</span>}
+            {completedLabel && <span>done: {completedLabel}</span>}
           </div>
           <div className="todo-actions">{footerActions}</div>
         </div>
@@ -241,17 +241,27 @@ function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <h1>Todo React App</h1>
-          <p>Persist todos locally. Everything stays in your browser.</p>
+          <h1>todo react app</h1>
+          <p>persist todos locally. everything stays in your browser.</p>
         </div>
-        <button
-          type="button"
-          className="view-toggle"
-          onClick={() => setViewMode((prev) => (prev === "list" ? "card" : "list"))}
-          aria-pressed={viewMode === "card"}
-        >
-          {viewMode === "list" ? "Card view" : "List view"}
-        </button>
+        <div className="view-toggles" role="group" aria-label="view mode">
+          <button
+            type="button"
+            className={viewMode === "list" ? "view-option active" : "view-option"}
+            onClick={() => setViewMode("list")}
+            aria-pressed={viewMode === "list"}
+          >
+            list
+          </button>
+          <button
+            type="button"
+            className={viewMode === "card" ? "view-option active" : "view-option"}
+            onClick={() => setViewMode("card")}
+            aria-pressed={viewMode === "card"}
+          >
+            card
+          </button>
+        </div>
       </header>
 
       <section className="composer">
@@ -259,17 +269,17 @@ function App() {
           <input
             type="text"
             name="title"
-            placeholder="Add a Task to Backlog"
+            placeholder="add a task to backlog"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            aria-label="Task title"
+            aria-label="task title"
             required
             autoComplete="off"
           />
-          <button type="submit">Add</button>
+          <button type="submit">add</button>
         </form>
         {viewMode === "list" && (
-          <div className="filters" role="radiogroup" aria-label="Filter todos">
+          <div className="filters" role="radiogroup" aria-label="filter todos">
             {CARD_COLUMNS.map(({ key, label }) => (
               <button
                 key={key}
@@ -292,14 +302,14 @@ function App() {
       >
         {viewMode === "card" ? (
           todos.length === 0 ? (
-            <p className="empty-state">No todos yet. Add one above.</p>
+            <p className="empty-state">no todos yet. add one above.</p>
           ) : (
             <div className="todo-board">
               {boardColumns.map(({ key, label, todos: columnTodos }) => (
                 <div key={key} className="todo-column">
                   <h2>{label}</h2>
                   {columnTodos.length === 0 ? (
-                    <p className="column-empty">Nothing here yet</p>
+                    <p className="column-empty">nothing here yet</p>
                   ) : (
                     <ul>{columnTodos.map((todo) => renderTodo(todo, "card"))}</ul>
                   )}
@@ -310,10 +320,10 @@ function App() {
         ) : filteredTodos.length === 0 ? (
           <p className="empty-state">
             {filter === "active"
-              ? "No tasks are active."
+              ? "no tasks are active."
               : filter === "completed"
-              ? "No tasks completed yet."
-              : "No todos yet. Add one above."}
+              ? "no tasks done yet."
+              : "no todos yet. add one above."}
           </p>
         ) : (
           <ul>{filteredTodos.map((todo) => renderTodo(todo))}</ul>
@@ -321,11 +331,13 @@ function App() {
       </section>
 
       <footer className="app-footer">
-        <span>Total: {stats.total}</span>
-        <span>Completed: {stats.completed}</span>
-        <span>Remaining: {stats.remaining}</span>
+        <div className="footer-stats">
+          <span>total: {stats.total}</span>
+          <span>done: {stats.completed}</span>
+          <span>remaining: {stats.remaining}</span>
+        </div>
         <button type="button" onClick={clearCompleted} disabled={stats.completed === 0}>
-          Clear completed
+          clear done
         </button>
       </footer>
     </main>

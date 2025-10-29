@@ -3,7 +3,7 @@
   background: #ffffff;
   color: #111111;
   padding: 2rem 1.5rem;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -122,7 +122,7 @@
   border-radius: 0;
   padding: 0.75rem 1rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -133,20 +133,48 @@
   gap: 0.75rem;
 }
 
+.todo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.todo-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #333333;
+}
+
+.todo-card .todo-actions {
+  align-self: stretch;
+  justify-content: flex-end;
+}
+
 .todo.completed span {
   text-decoration: line-through;
   color: #555555;
 }
 
-.todo label {
+.todo-label {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   font-size: 1rem;
+  flex: 1;
 }
 
-.todo-card label {
+.todo-card .todo-label {
   align-items: flex-start;
+}
+
+.todo-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .todo button {
@@ -158,7 +186,7 @@
 }
 
 .todo-card button {
-  align-self: flex-end;
+  align-self: auto;
 }
 
 .empty-state {

@@ -3,21 +3,35 @@ import { useTodos } from "./hooks/useTodos";
 import "./App.css";
 
 const FILTERS = {
-  all: () => true,
-  active: (todo) => !todo.completed,
-  completed: (todo) => todo.completed
+  backlog: (todo) => todo.status === "backlog",
+  active: (todo) => todo.status === "active",
+  completed: (todo) => todo.status === "completed"
 };
 
 const CARD_COLUMNS = [
-  { key: "all", label: "All" },
+  { key: "backlog", label: "Backlog" },
   { key: "active", label: "Active" },
   { key: "completed", label: "Completed" }
 ];
 
+const formatTimestamp = (value) => {
+  if (!value) return "";
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  } catch (error) {
+    return value;
+  }
+};
+
 function App() {
   const { todos, setTodos, stats } = useTodos();
   const [title, setTitle] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
 
   const filteredTodos = useMemo(
@@ -42,7 +56,9 @@ function App() {
     const nextTodo = {
       id: crypto.randomUUID(),
       title: title.trim(),
+      status: "backlog",
       completed: false,
+      activatedAt: null,
       createdAt: new Date().toISOString()
     };
 
@@ -50,48 +66,125 @@ function App() {
     setTitle("");
   };
 
-  const toggleTodo = (id) => {
+  const updateTodoStatus = (id, status) => {
+    const timestamp = new Date().toISOString();
     setTodos((prev) =>
       prev.map((todo) =>
         todo.id === id
-          ? { ...todo, completed: !todo.completed, completedAt: !todo.completed ? new Date().toISOString() : null }
+          ? {
+              ...todo,
+              status,
+              completed: status === "completed",
+              activatedAt:
+                status === "active"
+                  ? todo.activatedAt ?? timestamp
+                  : status === "completed"
+                  ? todo.activatedAt ?? timestamp
+                  : null,
+              completedAt: status === "completed" ? timestamp : null
+            }
           : todo
       )
     );
   };
 
-  const deleteTodo = (id) => {
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
+  const toggleTodo = (id, checked) => {
+    updateTodoStatus(id, checked ? "completed" : "active");
+  };
+
+  const moveToBacklog = (id) => {
+    updateTodoStatus(id, "backlog");
+  };
+
+  const moveToActive = (id) => {
+    updateTodoStatus(id, "active");
+  };
+
+  const removeTodo = (id) => {
+    setTodos((prev) =>
+      prev.filter((todo) => todo.id !== id)
+    );
+  };
+
+  const handleDismiss = (todo) => {
+    if (todo.status === "active") {
+      moveToBacklog(todo.id);
+      return;
+    }
+    removeTodo(todo.id);
   };
 
   const clearCompleted = () => {
-    setTodos((prev) => prev.filter((todo) => !todo.completed));
+    setTodos((prev) => prev.filter((todo) => todo.status !== "completed"));
   };
 
-  const renderTodo = (todo, variant = "list") => (
-    <li
-      key={todo.id}
-      className={`todo${todo.completed ? " completed" : ""}${
-        variant === "card" ? " todo-card" : ""
-      }`}
-    >
-      <label>
-        <input
-          type="checkbox"
-          checked={todo.completed}
-          onChange={() => toggleTodo(todo.id)}
-        />
-        <span>{todo.title}</span>
-      </label>
-      <button
-        type="button"
-        onClick={() => deleteTodo(todo.id)}
-        aria-label={`Delete ${todo.title}`}
+  const renderTodo = (todo, variant = "list") => {
+    const createdLabel = formatTimestamp(todo.createdAt);
+    const activatedLabel = todo.activatedAt
+      ? formatTimestamp(todo.activatedAt)
+      : null;
+    const completedLabel = todo.completedAt
+      ? formatTimestamp(todo.completedAt)
+      : null;
+
+    return (
+      <li
+        key={todo.id}
+        className={`todo${todo.completed ? " completed" : ""}${
+          variant === "card" ? " todo-card" : ""
+        }`}
       >
-        ×
-      </button>
-    </li>
-  );
+        <div className="todo-body">
+          <label className="todo-label">
+            <input
+              type="checkbox"
+              checked={todo.status === "completed"}
+              onChange={(event) => toggleTodo(todo.id, event.target.checked)}
+            />
+            <span>{todo.title}</span>
+          </label>
+          <div className="todo-meta">
+            <span>Created: {createdLabel || "Unknown"}</span>
+            <span>
+              Activated: {activatedLabel ? activatedLabel : "Not yet"}
+            </span>
+            {completedLabel && <span>Completed: {completedLabel}</span>}
+          </div>
+        </div>
+        <div className="todo-actions">
+          {todo.status === "backlog" && (
+            <button
+              type="button"
+              onClick={() => moveToActive(todo.id)}
+              aria-label={`Move ${todo.title} to active`}
+            >
+              Activate
+            </button>
+          )}
+          {todo.status === "active" && (
+            <button
+              type="button"
+              onClick={() => updateTodoStatus(todo.id, "completed")}
+              aria-label={`Mark ${todo.title} as completed`}
+            >
+              Mark as Completed
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => handleDismiss(todo)}
+            aria-label={
+              todo.status === "active"
+                ? `Return ${todo.title} to backlog`
+                : `Delete ${todo.title}`
+            }
+          >
+            ×
+          </button>
+        </div>
+      </li>
+    );
+  };
 
   return (
     <main className="app-shell">
@@ -115,17 +208,17 @@ function App() {
           <input
             type="text"
             name="title"
-            placeholder="Add a todo"
+            placeholder="Add a Task to Backlog"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            aria-label="Todo title"
+            aria-label="Task title"
             required
             autoComplete="off"
           />
           <button type="submit">Add</button>
         </form>
         <div className="filters" role="radiogroup" aria-label="Filter todos">
-          {Object.keys(FILTERS).map((key) => (
+          {CARD_COLUMNS.map(({ key, label }) => (
             <button
               key={key}
               type="button"
@@ -134,7 +227,7 @@ function App() {
               role="radio"
               aria-checked={filter === key}
             >
-              {key.charAt(0).toUpperCase() + key.slice(1)}
+              {label}
             </button>
           ))}
         </div>
@@ -162,7 +255,13 @@ function App() {
             </div>
           )
         ) : filteredTodos.length === 0 ? (
-          <p className="empty-state">No todos yet. Add one above.</p>
+          <p className="empty-state">
+            {filter === "active"
+              ? "No tasks are active."
+              : filter === "completed"
+              ? "No tasks completed yet."
+              : "No todos yet. Add one above."}
+          </p>
         ) : (
           <ul>{filteredTodos.map((todo) => renderTodo(todo))}</ul>
         )}

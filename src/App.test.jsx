@@ -6,8 +6,6 @@ import App from "./App";
 describe("App", () => {
   it("renders heading", () => {
     render(<App />);
-    expect(
-      screen.getByRole("heading", { name: /todo react app/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /tasks/i })).toBeInTheDocument();
   });
 });

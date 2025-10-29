@@ -16,6 +16,8 @@ export function useTodos() {
             : todo.completed
             ? "completed"
             : "backlog";
+          const description =
+            typeof todo.description === "string" ? todo.description : "";
           const createdAt =
             typeof todo.createdAt === "string"
               ? todo.createdAt
@@ -27,6 +29,7 @@ export function useTodos() {
           return {
             ...todo,
             status,
+            description,
             createdAt,
             activatedAt,
             completedAt: status === "completed" ? completedAt : null,

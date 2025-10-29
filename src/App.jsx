@@ -31,6 +31,7 @@ const formatTimestamp = (value) => {
 function App() {
   const { todos, setTodos, stats } = useTodos();
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
 
@@ -56,6 +57,7 @@ function App() {
     const nextTodo = {
       id: crypto.randomUUID(),
       title: title.trim(),
+      description: description.trim(),
       status: "backlog",
       completed: false,
       activatedAt: null,
@@ -64,6 +66,7 @@ function App() {
 
     setTodos((prev) => [nextTodo, ...prev]);
     setTitle("");
+    setDescription("");
   };
 
   const updateTodoStatus = (id, status) => {
@@ -192,6 +195,9 @@ function App() {
               ×
             </button>
           </div>
+          {todo.description && (
+            <p className="todo-description">{todo.description}</p>
+          )}
           <div className="todo-footer card-footer">
             <div className="todo-meta">
               <span>created: {createdLabel || "unknown"}</span>
@@ -213,7 +219,7 @@ function App() {
         key={todo.id}
         className={`todo${todo.completed ? " completed" : ""}`}
       >
-        <div className="todo-content">
+        <div className="todo-header">
           <label className="todo-label">
             <input
               type="checkbox"
@@ -222,7 +228,18 @@ function App() {
             />
             <span>{todo.title}</span>
           </label>
+          <button
+            type="button"
+            className="todo-dismiss"
+            onClick={() => handleDismiss(todo)}
+            aria-label={dismissAriaLabel}
+          >
+            ×
+          </button>
         </div>
+        {todo.description && (
+          <p className="todo-description">{todo.description}</p>
+        )}
         <div className="todo-footer">
           <div className="todo-meta">
             <span>created: {createdLabel || "unknown"}</span>
@@ -275,6 +292,14 @@ function App() {
             aria-label="task title"
             required
             autoComplete="off"
+          />
+          <textarea
+            name="description"
+            placeholder="add a short description (optional)"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            aria-label="task description"
+            rows={2}
           />
           <button type="submit">add</button>
         </form>

@@ -105,6 +105,19 @@
   gap: 0.5rem;
 }
 
+.todo-list {
+  border: 1px solid #dddddd;
+  background: #ffffff;
+  padding: 0.75rem;
+}
+
+.todo-list .empty-state {
+  margin: 0;
+  border: none;
+  background: transparent;
+  padding: 1rem 0;
+}
+
 .todo-board {
   display: flex;
   gap: 1rem;

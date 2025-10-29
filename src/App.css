@@ -120,11 +120,11 @@
   background: #ffffff;
   border: 1px solid #dddddd;
   border-radius: 0;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 1rem;
+  min-height: 160px;
 }
 
 .todo-card {
@@ -133,11 +133,29 @@
   gap: 0.75rem;
 }
 
-.todo-body {
+.todo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.todo-content {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.todo-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .todo-meta {
@@ -146,11 +164,6 @@
   gap: 0.25rem;
   font-size: 0.85rem;
   color: #333333;
-}
-
-.todo-card .todo-actions {
-  align-self: stretch;
-  justify-content: flex-end;
 }
 
 .todo.completed span {
@@ -175,6 +188,24 @@
   gap: 0.5rem;
   align-items: center;
   flex-shrink: 0;
+}
+
+.todo-actions button {
+  white-space: nowrap;
+}
+
+.card-footer .todo-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.todo-dismiss {
+  padding: 0.35rem 0.6rem;
 }
 
 .todo button {

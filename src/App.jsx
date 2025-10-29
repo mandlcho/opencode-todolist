@@ -126,15 +126,94 @@ function App() {
     const completedLabel = todo.completedAt
       ? formatTimestamp(todo.completedAt)
       : null;
+    const isCard = variant === "card";
+    const dismissAriaLabel =
+      todo.status === "active"
+        ? `Return ${todo.title} to backlog`
+        : `Delete ${todo.title}`;
+    const footerActions = (
+      <>
+        {todo.status === "backlog" && (
+          <button
+            type="button"
+            onClick={() => moveToActive(todo.id)}
+            aria-label={`Move ${todo.title} to active`}
+          >
+            Activate
+          </button>
+        )}
+        {todo.status === "active" && (
+          <button
+            type="button"
+            onClick={() => updateTodoStatus(todo.id, "completed")}
+            aria-label={`Mark ${todo.title} as completed`}
+          >
+            Mark as Completed
+          </button>
+        )}
+        {!isCard && (
+          <button
+            type="button"
+            onClick={() => handleDismiss(todo)}
+            aria-label={dismissAriaLabel}
+          >
+            ×
+          </button>
+        )}
+      </>
+    );
+
+    const showFooterActions =
+      todo.status === "backlog" ||
+      todo.status === "active" ||
+      !isCard;
+
+    if (isCard) {
+      return (
+        <li
+          key={todo.id}
+          className={`todo${todo.completed ? " completed" : ""} todo-card`}
+        >
+          <div className="todo-card-header">
+            <label className="todo-label">
+              <input
+                type="checkbox"
+                checked={todo.status === "completed"}
+                onChange={(event) => toggleTodo(todo.id, event.target.checked)}
+              />
+              <span>{todo.title}</span>
+            </label>
+            <button
+              type="button"
+              className="todo-dismiss"
+              onClick={() => handleDismiss(todo)}
+              aria-label={dismissAriaLabel}
+            >
+              ×
+            </button>
+          </div>
+          <div className="todo-footer card-footer">
+            <div className="todo-meta">
+              <span>Created: {createdLabel || "Unknown"}</span>
+              <span>
+                Activated: {activatedLabel ? activatedLabel : "Not yet"}
+              </span>
+              {completedLabel && <span>Completed: {completedLabel}</span>}
+            </div>
+            {showFooterActions && (
+              <div className="todo-actions card-actions">{footerActions}</div>
+            )}
+          </div>
+        </li>
+      );
+    }
 
     return (
       <li
         key={todo.id}
-        className={`todo${todo.completed ? " completed" : ""}${
-          variant === "card" ? " todo-card" : ""
-        }`}
+        className={`todo${todo.completed ? " completed" : ""}`}
       >
-        <div className="todo-body">
+        <div className="todo-content">
           <label className="todo-label">
             <input
               type="checkbox"
@@ -143,6 +222,8 @@ function App() {
             />
             <span>{todo.title}</span>
           </label>
+        </div>
+        <div className="todo-footer">
           <div className="todo-meta">
             <span>Created: {createdLabel || "Unknown"}</span>
             <span>
@@ -150,37 +231,7 @@ function App() {
             </span>
             {completedLabel && <span>Completed: {completedLabel}</span>}
           </div>
-        </div>
-        <div className="todo-actions">
-          {todo.status === "backlog" && (
-            <button
-              type="button"
-              onClick={() => moveToActive(todo.id)}
-              aria-label={`Move ${todo.title} to active`}
-            >
-              Activate
-            </button>
-          )}
-          {todo.status === "active" && (
-            <button
-              type="button"
-              onClick={() => updateTodoStatus(todo.id, "completed")}
-              aria-label={`Mark ${todo.title} as completed`}
-            >
-              Mark as Completed
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => handleDismiss(todo)}
-            aria-label={
-              todo.status === "active"
-                ? `Return ${todo.title} to backlog`
-                : `Delete ${todo.title}`
-            }
-          >
-            ×
-          </button>
+          <div className="todo-actions">{footerActions}</div>
         </div>
       </li>
     );

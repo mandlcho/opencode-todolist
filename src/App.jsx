@@ -241,8 +241,8 @@ function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <h1>todo react app</h1>
-          <p>persist todos locally. everything stays in your browser.</p>
+          <h1>tasks</h1>
+          <p>simple task app</p>
         </div>
         <div className="view-toggles" role="group" aria-label="view mode">
           <button

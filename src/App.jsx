@@ -294,22 +294,27 @@ function App() {
           />
           <button type="submit">add</button>
         </form>
-        {viewMode === "list" && (
-          <div className="filters" role="radiogroup" aria-label="filter todos">
-            {CARD_COLUMNS.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                className={filter === key ? "active" : ""}
-                onClick={() => setFilter(key)}
-                role="radio"
-                aria-checked={filter === key}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div
+          className={viewMode === "list" ? "filters" : "filters filters-hidden"}
+          role="radiogroup"
+          aria-label="filter todos"
+          aria-hidden={viewMode !== "list"}
+        >
+          {CARD_COLUMNS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={filter === key ? "active" : ""}
+              onClick={() => setFilter(key)}
+              role="radio"
+              aria-checked={filter === key}
+              tabIndex={viewMode === "list" ? 0 : -1}
+              disabled={viewMode !== "list"}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section

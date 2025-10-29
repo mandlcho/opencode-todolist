@@ -81,6 +81,11 @@
   gap: 0.5rem;
 }
 
+.filters-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .filters button {
   padding: 0.35rem 0.75rem;
   border: 1px solid #cccccc;

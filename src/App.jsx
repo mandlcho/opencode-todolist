@@ -154,15 +154,6 @@ function App() {
             done
           </button>
         )}
-        {!isCard && (
-          <button
-            type="button"
-            onClick={() => handleDismiss(todo)}
-            aria-label={dismissAriaLabel}
-          >
-            ×
-          </button>
-        )}
       </>
     );
 

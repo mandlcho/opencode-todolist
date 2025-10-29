@@ -210,8 +210,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.85rem;
-  color: #333333;
+  font-size: 0.75rem;
+  color: #555555;
 }
 
 .todo.completed span {
@@ -233,8 +233,8 @@
 
 .todo-description {
   margin: 0;
-  font-size: 0.95rem;
-  color: #222222;
+  font-size: 0.75rem;
+  color: #555555;
   line-height: 1.4;
 }
 

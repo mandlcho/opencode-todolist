@@ -217,20 +217,22 @@ function App() {
           />
           <button type="submit">Add</button>
         </form>
-        <div className="filters" role="radiogroup" aria-label="Filter todos">
-          {CARD_COLUMNS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={filter === key ? "active" : ""}
-              onClick={() => setFilter(key)}
-              role="radio"
-              aria-checked={filter === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {viewMode === "list" && (
+          <div className="filters" role="radiogroup" aria-label="Filter todos">
+            {CARD_COLUMNS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={filter === key ? "active" : ""}
+                onClick={() => setFilter(key)}
+                role="radio"
+                aria-checked={filter === key}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section

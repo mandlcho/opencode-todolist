@@ -561,8 +561,8 @@ function App() {
             aria-controls="archive-drawer"
           >
             {isArchiveOpen
-              ? "hide archive"
-              : `show archive (${archivedTodos.length})`}
+              ? "hide archived"
+              : `show archived (${archivedTodos.length})`}
           </button>
         </div>
       </footer>

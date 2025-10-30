@@ -122,7 +122,7 @@ describe("App", () => {
     ).not.toBeInTheDocument();
 
     const showArchiveButton = screen.getByRole("button", {
-      name: /show archive/i
+      name: /show archived/i
     });
     const drawer = screen.getByRole("region", { name: /archived tasks/i });
     expect(drawer).not.toHaveClass("open");
@@ -131,5 +131,8 @@ describe("App", () => {
 
     expect(drawer).toHaveClass("open");
     expect(within(drawer).getByText("archive me")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /hide archived/i })
+    ).toBeInTheDocument();
   });
 });

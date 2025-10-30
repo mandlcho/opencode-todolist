@@ -234,9 +234,13 @@ function App() {
             </button>
           </div>
         </div>
-        {todo.description && (
-          <p className="archived-description">{todo.description}</p>
-        )}
+        <p
+          className={`archived-description${
+            todo.description ? "" : " archived-description--empty"
+          }`}
+        >
+          {todo.description || "\u00a0"}
+        </p>
         <div className="archived-meta">
           {archivedLabel && <span>archived: {archivedLabel}</span>}
           {completedLabel && archivedLabel !== completedLabel && (

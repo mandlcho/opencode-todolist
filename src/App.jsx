@@ -50,8 +50,12 @@ function App() {
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [draggingTodoId, setDraggingTodoId] = useState(null);
+  const [dragOverTodoId, setDragOverTodoId] = useState(null);
+  const [dragOverPosition, setDragOverPosition] = useState("before");
   const archiveDrawerRef = useRef(null);
   const archiveToggleRef = useRef(null);
+  const isListView = viewMode === "list";
 
   useEffect(() => {
     if (archivedTodos.length === 0) {
@@ -84,6 +88,12 @@ function App() {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isArchiveOpen, setIsArchiveOpen]);
+
+  const resetDragState = useCallback(() => {
+    setDraggingTodoId(null);
+    setDragOverTodoId(null);
+    setDragOverPosition("before");
+  }, []);
 
   const handlePrioritySelect = (value) => {
     if (TODO_PRIORITIES.includes(value)) {
@@ -168,6 +178,69 @@ function App() {
     return reorderByPriorityFocus(list);
   }, [todos, filter, reorderByPriorityFocus]);
 
+  const reorderListTodos = useCallback(
+    (sourceId, targetId, position = "before") => {
+      if (!sourceId || sourceId === targetId) {
+        return;
+      }
+
+      const displayIds = filteredTodos.map((todo) => todo.id);
+      const sourceIndex = displayIds.indexOf(sourceId);
+      if (sourceIndex === -1) {
+        return;
+      }
+
+      const workingIds = [...displayIds];
+      const [moved] = workingIds.splice(sourceIndex, 1);
+
+      let insertionIndex;
+      if (!targetId) {
+        insertionIndex = workingIds.length;
+      } else {
+        const targetIndex = workingIds.indexOf(targetId);
+        if (targetIndex === -1) {
+          return;
+        }
+        insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
+      }
+
+      workingIds.splice(insertionIndex, 0, moved);
+
+      const hasChanged = workingIds.some((id, index) => id !== displayIds[index]);
+      if (!hasChanged) {
+        return;
+      }
+
+      const displayIdSet = new Set(displayIds);
+
+      setTodos((prev) => {
+        const idToTodo = new Map(prev.map((todo) => [todo.id, todo]));
+        const queue = workingIds.map((id) => idToTodo.get(id));
+        if (queue.some((todo) => !todo)) {
+          return prev;
+        }
+
+        const queueCopy = [...queue];
+        const next = [];
+
+        prev.forEach((todo) => {
+          if (!displayIdSet.has(todo.id)) {
+            next.push(todo);
+            return;
+          }
+
+          const nextTodo = queueCopy.shift();
+          if (nextTodo) {
+            next.push(nextTodo);
+          }
+        });
+
+        return next;
+      });
+    },
+    [filteredTodos, setTodos]
+  );
+
   const boardColumns = useMemo(
     () =>
       CARD_COLUMNS.map(({ key, label }) => ({
@@ -187,6 +260,111 @@ function App() {
       return bTime - aTime;
     });
   }, [archivedTodos]);
+
+  const handleListDragStart = useCallback(
+    (event, todoId) => {
+      if (!isListView) {
+        return;
+      }
+      event.dataTransfer.effectAllowed = "move";
+      try {
+        event.dataTransfer.setData("text/plain", todoId);
+      } catch (error) {
+        // ignore browsers that disallow setData during dragstart
+      }
+      setDraggingTodoId(todoId);
+      setDragOverTodoId(todoId);
+      setDragOverPosition("before");
+    },
+    [isListView]
+  );
+
+  const handleListDragOver = useCallback(
+    (event, todoId) => {
+      if (!isListView || !draggingTodoId) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      if (!todoId || todoId === draggingTodoId) {
+        return;
+      }
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const offsetY = event.clientY - bounds.top;
+      const position = offsetY > bounds.height / 2 ? "after" : "before";
+
+      setDragOverTodoId((prev) => (prev === todoId ? prev : todoId));
+      setDragOverPosition((prev) => (prev === position ? prev : position));
+    },
+    [isListView, draggingTodoId]
+  );
+
+  const handleListDrop = useCallback(
+    (event, todoId) => {
+      if (!isListView || !draggingTodoId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      reorderListTodos(draggingTodoId, todoId, dragOverPosition);
+      resetDragState();
+    },
+    [
+      isListView,
+      draggingTodoId,
+      dragOverPosition,
+      reorderListTodos,
+      resetDragState
+    ]
+  );
+
+  const handleListContainerDragOver = useCallback(
+    (event) => {
+      if (!isListView || !draggingTodoId) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      if (event.target === event.currentTarget) {
+        setDragOverTodoId(null);
+        setDragOverPosition("after");
+      }
+    },
+    [isListView, draggingTodoId]
+  );
+
+  const handleListContainerDrop = useCallback(
+    (event) => {
+      if (!isListView || !draggingTodoId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.target === event.currentTarget) {
+        reorderListTodos(draggingTodoId, null, "after");
+      } else if (dragOverTodoId && dragOverTodoId !== draggingTodoId) {
+        reorderListTodos(draggingTodoId, dragOverTodoId, dragOverPosition);
+      }
+
+      resetDragState();
+    },
+    [
+      isListView,
+      draggingTodoId,
+      dragOverTodoId,
+      dragOverPosition,
+      reorderListTodos,
+      resetDragState
+    ]
+  );
+
+  const handleListDragEnd = useCallback(() => {
+    if (!draggingTodoId) {
+      return;
+    }
+    resetDragState();
+  }, [draggingTodoId, resetDragState]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -375,6 +553,22 @@ function App() {
       todo.status === "active" ||
       !isCard;
 
+    const isDragging = isListView && draggingTodoId === todo.id;
+    const isDropTarget =
+      isListView && dragOverTodoId === todo.id && draggingTodoId !== todo.id;
+    const dropClasses = isDropTarget ? ` drop-target drop-${dragOverPosition}` : "";
+    const listDragProps = isListView
+      ? {
+          draggable: true,
+          onDragStart: (event) => handleListDragStart(event, todo.id),
+          onDragOver: (event) => handleListDragOver(event, todo.id),
+          onDrop: (event) => handleListDrop(event, todo.id),
+          onDragEnd: handleListDragEnd,
+          "aria-grabbed": isDragging || undefined,
+          "data-drop-position": isDropTarget ? dragOverPosition : undefined
+        }
+      : {};
+
     if (isCard) {
       return (
         <li
@@ -424,7 +618,10 @@ function App() {
     return (
       <li
         key={todo.id}
-        className={`todo${todo.completed ? " completed" : ""}`}
+        className={`todo${todo.completed ? " completed" : ""}${
+          isDragging ? " dragging" : ""
+        }${dropClasses}`}
+        {...listDragProps}
       >
         <div className="todo-header">
           <label className="todo-label">
@@ -608,7 +805,12 @@ function App() {
               : "no todos yet. add one above."}
           </p>
         ) : (
-          <ul>{filteredTodos.map((todo) => renderTodo(todo))}</ul>
+          <ul
+            onDragOver={handleListContainerDragOver}
+            onDrop={handleListContainerDrop}
+          >
+            {filteredTodos.map((todo) => renderTodo(todo))}
+          </ul>
         )}
       </section>
 
@@ -662,4 +864,3 @@ function App() {
 }
 
 export default App;
-

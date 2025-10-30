@@ -261,6 +261,38 @@
   min-height: 160px;
 }
 
+.todo-list:not(.card-view) .todo {
+  cursor: grab;
+  position: relative;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.todo-list:not(.card-view) .todo.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.todo-list:not(.card-view) .todo.drop-target {
+  background: #f6f8fb;
+}
+
+.todo-list:not(.card-view) .todo.drop-target::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: #1f2933;
+}
+
+.todo-list:not(.card-view) .todo.drop-target.drop-before::before {
+  top: -1px;
+}
+
+.todo-list:not(.card-view) .todo.drop-target.drop-after::before {
+  bottom: -1px;
+}
+
 .todo-card {
   flex-direction: column;
   align-items: flex-start;

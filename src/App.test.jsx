@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import App from "./App";
 
 // Smoke test to ensure the component renders without crashing.
@@ -102,7 +102,7 @@ describe("App", () => {
     ]);
   });
 
-  it("archives completed tasks and shows them in the drawer", () => {
+  it("archives completed tasks and shows them in the drawer", async () => {
     render(<App />);
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
@@ -117,22 +117,32 @@ describe("App", () => {
     const archiveButton = screen.getByRole("button", { name: /^archive$/i });
     fireEvent.click(archiveButton);
 
-    expect(
-      screen.queryByRole("checkbox", { name: /archive me/i })
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("checkbox", { name: /archive me/i })
+      ).not.toBeInTheDocument()
+    );
 
-    const showArchiveButton = screen.getByRole("button", {
-      name: /show archived/i
+    const showArchiveButton = await screen.findByRole("button", {
+      name: /show archived \(1\)/i
     });
-    const drawer = screen.getByRole("region", { name: /archived tasks/i });
+
+    expect(showArchiveButton).toBeEnabled();
+
+    const drawer = document.getElementById("archive-drawer");
+    if (!drawer) {
+      throw new Error("archive drawer not found");
+    }
     expect(drawer).not.toHaveClass("open");
 
     fireEvent.click(showArchiveButton);
 
     expect(drawer).toHaveClass("open");
-    expect(within(drawer).getByText("archive me")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /hide archived/i })
-    ).toBeInTheDocument();
+    expect(within(drawer).getAllByText("archive me")).toHaveLength(1);
+
+    const hideArchiveButton = screen.getByRole("button", {
+      name: /hide archived/i
+    });
+    expect(hideArchiveButton).toBeInTheDocument();
   });
 });

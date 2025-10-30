@@ -71,22 +71,49 @@ function App() {
   };
 
   const archiveCompleted = () => {
-    const toArchive = [];
-    setTodos((prev) => {
-      const remaining = [];
-      prev.forEach((todo) => {
-        if (todo.status === "completed") {
-          const archivedAt = todo.archivedAt ?? new Date().toISOString();
-          toArchive.push({ ...todo, archivedAt });
-        } else {
-          remaining.push(todo);
-        }
-      });
-      return remaining;
-    });
-    if (toArchive.length > 0) {
-      setArchivedTodos((prev) => [...toArchive, ...prev]);
+    if (todos.length === 0) {
+      return;
     }
+
+    const completedTodos = todos.filter(
+      (todo) => todo.status === "completed" || todo.completed
+    );
+
+    if (completedTodos.length === 0) {
+      return;
+    }
+
+    const archivedBatch = completedTodos.map((todo) => {
+      const timestamp = new Date().toISOString();
+      return {
+        ...todo,
+        status: "completed",
+        completed: true,
+        completedAt: todo.completedAt ?? timestamp,
+        archivedAt: todo.archivedAt ?? timestamp
+      };
+    });
+
+    const archivedIds = new Set(archivedBatch.map((todo) => todo.id));
+
+    setTodos((prev) => prev.filter((todo) => !archivedIds.has(todo.id)));
+
+    setArchivedTodos((prev) => {
+      if (prev.length === 0) {
+        return archivedBatch;
+      }
+
+      const merged = new Map(prev.map((todo) => [todo.id, todo]));
+      archivedBatch.forEach((todo) => {
+        const existing = merged.get(todo.id);
+        merged.set(todo.id, existing ? { ...existing, ...todo } : todo);
+      });
+
+      const orderedNew = archivedBatch.map((todo) => merged.get(todo.id));
+      const remaining = prev.filter((todo) => !archivedIds.has(todo.id));
+
+      return [...orderedNew, ...remaining];
+    });
   };
 
   const reorderByPriorityFocus = useCallback(

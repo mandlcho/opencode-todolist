@@ -293,6 +293,49 @@
   bottom: -1px;
 }
 
+.todo-list.card-view .todo-card {
+  cursor: grab;
+  position: relative;
+  transition: background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.todo-list.card-view .todo-card.dragging {
+  opacity: 0.65;
+  cursor: grabbing;
+}
+
+.todo-list.card-view .todo-card.card-drop-target {
+  background: #f6f8fb;
+  box-shadow: inset 0 0 0 1px #1f2933;
+}
+
+.todo-list.card-view .todo-card.card-drop-target::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: #1f2933;
+}
+
+.todo-list.card-view .todo-card.card-drop-target.card-drop-before::before {
+  top: -1px;
+}
+
+.todo-list.card-view .todo-card.card-drop-target.card-drop-after::before {
+  bottom: -1px;
+}
+
+.todo-board .todo-column {
+  transition: background 0.15s ease, outline 0.15s ease;
+}
+
+.todo-board .todo-column.column-drop-target {
+  background: #f4f7fb;
+  outline: 2px dashed #1f2933;
+  outline-offset: 4px;
+}
+
 .todo-card {
   flex-direction: column;
   align-items: flex-start;

@@ -53,9 +53,14 @@ function App() {
   const [draggingTodoId, setDraggingTodoId] = useState(null);
   const [dragOverTodoId, setDragOverTodoId] = useState(null);
   const [dragOverPosition, setDragOverPosition] = useState("before");
+  const [cardDraggingId, setCardDraggingId] = useState(null);
+  const [cardDragOverColumn, setCardDragOverColumn] = useState(null);
+  const [cardDragOverTodoId, setCardDragOverTodoId] = useState(null);
+  const [cardDragPosition, setCardDragPosition] = useState("before");
   const archiveDrawerRef = useRef(null);
   const archiveToggleRef = useRef(null);
   const isListView = viewMode === "list";
+  const isCardView = viewMode === "card";
 
   useEffect(() => {
     if (archivedTodos.length === 0) {
@@ -93,6 +98,13 @@ function App() {
     setDraggingTodoId(null);
     setDragOverTodoId(null);
     setDragOverPosition("before");
+  }, []);
+
+  const resetCardDragState = useCallback(() => {
+    setCardDraggingId(null);
+    setCardDragOverColumn(null);
+    setCardDragOverTodoId(null);
+    setCardDragPosition("before");
   }, []);
 
   const handlePrioritySelect = (value) => {
@@ -241,6 +253,86 @@ function App() {
     [filteredTodos, setTodos]
   );
 
+  const moveTodoInBoard = useCallback(
+    (sourceId, targetStatus, targetId, position = "before") => {
+      if (!sourceId) {
+        return;
+      }
+
+      setTodos((prev) => {
+        const sourceIndex = prev.findIndex((todo) => todo.id === sourceId);
+        if (sourceIndex === -1) {
+          return prev;
+        }
+
+        const sourceTodo = prev[sourceIndex];
+        const timestamp = new Date().toISOString();
+        const nextStatus =
+          typeof targetStatus === "string" ? targetStatus : sourceTodo.status;
+        const statusChanged = nextStatus !== sourceTodo.status;
+
+        const updatedTodo = statusChanged
+          ? {
+              ...sourceTodo,
+              status: nextStatus,
+              completed: nextStatus === "completed",
+              activatedAt:
+                nextStatus === "active"
+                  ? sourceTodo.activatedAt ?? timestamp
+                  : nextStatus === "completed"
+                  ? sourceTodo.activatedAt ?? timestamp
+                  : null,
+              completedAt: nextStatus === "completed" ? timestamp : null
+            }
+          : sourceTodo;
+
+        const remaining = [...prev];
+        remaining.splice(sourceIndex, 1);
+
+        const columnOrder = CARD_COLUMNS.map(({ key }) => key);
+        const computeDefaultInsertion = () => {
+          const matchingIndices = [];
+          remaining.forEach((todo, index) => {
+            if (todo.status === nextStatus) {
+              matchingIndices.push(index);
+            }
+          });
+          if (matchingIndices.length === 0) {
+            const targetColumnIndex = columnOrder.indexOf(nextStatus);
+            if (targetColumnIndex === -1) {
+              return remaining.length;
+            }
+            const afterIndex = remaining.findIndex((todo) => {
+              const statusIndex = columnOrder.indexOf(todo.status);
+              return statusIndex !== -1 && statusIndex > targetColumnIndex;
+            });
+            return afterIndex === -1 ? remaining.length : afterIndex;
+          }
+          return position === "before"
+            ? matchingIndices[0]
+            : matchingIndices[matchingIndices.length - 1] + 1;
+        };
+
+        let insertionIndex = computeDefaultInsertion();
+        if (targetId) {
+          const targetIndex = remaining.findIndex((todo) => todo.id === targetId);
+          if (targetIndex !== -1) {
+            insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
+          }
+        }
+
+        const next = [
+          ...remaining.slice(0, insertionIndex),
+          statusChanged ? updatedTodo : { ...updatedTodo },
+          ...remaining.slice(insertionIndex)
+        ];
+
+        return next;
+      });
+    },
+    [setTodos]
+  );
+
   const boardColumns = useMemo(
     () =>
       CARD_COLUMNS.map(({ key, label }) => ({
@@ -365,6 +457,104 @@ function App() {
     }
     resetDragState();
   }, [draggingTodoId, resetDragState]);
+
+  const handleCardDragStart = useCallback(
+    (event, todoId, columnKey) => {
+      if (!isCardView) {
+        return;
+      }
+      event.dataTransfer.effectAllowed = "move";
+      try {
+        event.dataTransfer.setData("text/plain", todoId);
+      } catch (error) {
+        // ignore setData failures in some browsers
+      }
+      setCardDraggingId(todoId);
+      setCardDragOverColumn(columnKey);
+      setCardDragOverTodoId(todoId);
+      setCardDragPosition("before");
+    },
+    [isCardView]
+  );
+
+  const handleCardDragOver = useCallback(
+    (event, todoId, columnKey) => {
+      if (!isCardView || !cardDraggingId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = "move";
+      if (todoId === cardDraggingId) {
+        return;
+      }
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const offsetY = event.clientY - bounds.top;
+      const position = offsetY > bounds.height / 2 ? "after" : "before";
+      setCardDragOverColumn(columnKey);
+      setCardDragOverTodoId(todoId);
+      setCardDragPosition(position);
+    },
+    [isCardView, cardDraggingId]
+  );
+
+  const handleCardDropOnTodo = useCallback(
+    (event, todoId, columnKey) => {
+      if (!isCardView || !cardDraggingId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (todoId === cardDraggingId) {
+        resetCardDragState();
+        return;
+      }
+      moveTodoInBoard(cardDraggingId, columnKey, todoId, cardDragPosition);
+      resetCardDragState();
+    },
+    [
+      isCardView,
+      cardDraggingId,
+      cardDragPosition,
+      moveTodoInBoard,
+      resetCardDragState
+    ]
+  );
+
+  const handleCardColumnDragOver = useCallback(
+    (event, columnKey) => {
+      if (!isCardView || !cardDraggingId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = "move";
+      setCardDragOverColumn(columnKey);
+      setCardDragOverTodoId(null);
+      setCardDragPosition("after");
+    },
+    [isCardView, cardDraggingId]
+  );
+
+  const handleCardColumnDrop = useCallback(
+    (event, columnKey) => {
+      if (!isCardView || !cardDraggingId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      moveTodoInBoard(cardDraggingId, columnKey, null, "after");
+      resetCardDragState();
+    },
+    [isCardView, cardDraggingId, moveTodoInBoard, resetCardDragState]
+  );
+
+  const handleCardDragEnd = useCallback(() => {
+    if (!cardDraggingId) {
+      return;
+    }
+    resetCardDragState();
+  }, [cardDraggingId, resetCardDragState]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -494,7 +684,7 @@ function App() {
     removeTodo(todo.id);
   };
 
-  const renderTodo = (todo, variant = "list") => {
+  const renderTodo = (todo, variant = "list", columnKey = "") => {
     const createdLabel = formatTimestamp(todo.createdAt);
     const activatedLabel = todo.activatedAt
       ? formatTimestamp(todo.activatedAt)
@@ -503,6 +693,7 @@ function App() {
       ? formatTimestamp(todo.completedAt)
       : null;
     const isCard = variant === "card";
+    const cardColumnKey = columnKey || todo.status;
     const dismissAriaLabel =
       todo.status === "active"
         ? `return ${todo.title} to backlog`
@@ -553,10 +744,12 @@ function App() {
       todo.status === "active" ||
       !isCard;
 
-    const isDragging = isListView && draggingTodoId === todo.id;
-    const isDropTarget =
+    const isListDragging = isListView && draggingTodoId === todo.id;
+    const isListDropTarget =
       isListView && dragOverTodoId === todo.id && draggingTodoId !== todo.id;
-    const dropClasses = isDropTarget ? ` drop-target drop-${dragOverPosition}` : "";
+    const dropClasses = isListDropTarget
+      ? ` drop-target drop-${dragOverPosition}`
+      : "";
     const listDragProps = isListView
       ? {
           draggable: true,
@@ -564,8 +757,28 @@ function App() {
           onDragOver: (event) => handleListDragOver(event, todo.id),
           onDrop: (event) => handleListDrop(event, todo.id),
           onDragEnd: handleListDragEnd,
-          "aria-grabbed": isDragging || undefined,
-          "data-drop-position": isDropTarget ? dragOverPosition : undefined
+          "aria-grabbed": isListDragging || undefined,
+          "data-drop-position": isListDropTarget ? dragOverPosition : undefined
+        }
+      : {};
+
+    const isCardDragging = isCardView && cardDraggingId === todo.id;
+    const isCardDropTarget =
+      isCardView &&
+      cardDragOverTodoId === todo.id &&
+      cardDraggingId !== todo.id &&
+      cardDragOverColumn === cardColumnKey;
+    const cardDropClasses = isCardDropTarget
+      ? ` card-drop-target card-drop-${cardDragPosition}`
+      : "";
+    const cardDragProps = isCardView
+      ? {
+          draggable: true,
+          onDragStart: (event) => handleCardDragStart(event, todo.id, cardColumnKey),
+          onDragOver: (event) => handleCardDragOver(event, todo.id, cardColumnKey),
+          onDrop: (event) => handleCardDropOnTodo(event, todo.id, cardColumnKey),
+          onDragEnd: handleCardDragEnd,
+          "aria-grabbed": isCardDragging || undefined
         }
       : {};
 
@@ -573,7 +786,10 @@ function App() {
       return (
         <li
           key={todo.id}
-          className={`todo${todo.completed ? " completed" : ""} todo-card`}
+          className={`todo${todo.completed ? " completed" : ""} todo-card${
+            isCardDragging ? " dragging" : ""
+          }${cardDropClasses}`}
+          {...cardDragProps}
         >
           <div className="todo-card-header">
             <label className="todo-label">
@@ -619,7 +835,7 @@ function App() {
       <li
         key={todo.id}
         className={`todo${todo.completed ? " completed" : ""}${
-          isDragging ? " dragging" : ""
+          isListDragging ? " dragging" : ""
         }${dropClasses}`}
         {...listDragProps}
       >
@@ -784,16 +1000,31 @@ function App() {
             <p className="empty-state">no todos yet. add one above.</p>
           ) : (
             <div className="todo-board">
-              {boardColumns.map(({ key, label, todos: columnTodos }) => (
-                <div key={key} className="todo-column">
-                  <h2>{label}</h2>
-                  {columnTodos.length === 0 ? (
-                    <p className="column-empty">nothing here yet</p>
-                  ) : (
-                    <ul>{columnTodos.map((todo) => renderTodo(todo, "card"))}</ul>
-                  )}
-                </div>
-              ))}
+              {boardColumns.map(({ key, label, todos: columnTodos }) => {
+                const isColumnDropTarget =
+                  isCardView &&
+                  cardDragOverColumn === key &&
+                  (!cardDragOverTodoId || cardDragOverTodoId === cardDraggingId);
+                return (
+                  <div
+                    key={key}
+                    className={`todo-column${
+                      isColumnDropTarget ? " column-drop-target" : ""
+                    }`}
+                    onDragOver={(event) => handleCardColumnDragOver(event, key)}
+                    onDrop={(event) => handleCardColumnDrop(event, key)}
+                  >
+                    <h2>{label}</h2>
+                    {columnTodos.length === 0 ? (
+                      <p className="column-empty">nothing here yet</p>
+                    ) : (
+                      <ul>
+                        {columnTodos.map((todo) => renderTodo(todo, "card", key))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )
         ) : filteredTodos.length === 0 ? (

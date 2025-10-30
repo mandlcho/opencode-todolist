@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useTodos } from "./hooks/useTodos";
+import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import "./App.css";
 
 const FILTERS = {
@@ -13,6 +13,19 @@ const CARD_COLUMNS = [
   { key: "active", label: "active" },
   { key: "completed", label: "done" }
 ];
+
+const PRIORITY_OPTIONS = TODO_PRIORITIES.map((value) => ({
+  value,
+  label: value.charAt(0).toUpperCase() + value.slice(1)
+}));
+
+const getNextPriority = (current) => {
+  const index = TODO_PRIORITIES.indexOf(current);
+  if (index === -1) {
+    return DEFAULT_PRIORITY;
+  }
+  return TODO_PRIORITIES[(index + 1) % TODO_PRIORITIES.length];
+};
 
 const formatTimestamp = (value) => {
   if (!value) return "";
@@ -32,8 +45,15 @@ function App() {
   const { todos, setTodos, stats } = useTodos();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState(DEFAULT_PRIORITY);
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
+
+  const handlePrioritySelect = (value) => {
+    if (TODO_PRIORITIES.includes(value)) {
+      setPriority(value);
+    }
+  };
 
   const filteredTodos = useMemo(
     () => todos.filter(FILTERS[filter]),
@@ -58,6 +78,7 @@ function App() {
       id: crypto.randomUUID(),
       title: title.trim(),
       description: description.trim(),
+      priority,
       status: "backlog",
       completed: false,
       activatedAt: null,
@@ -67,6 +88,7 @@ function App() {
     setTodos((prev) => [nextTodo, ...prev]);
     setTitle("");
     setDescription("");
+    setPriority(DEFAULT_PRIORITY);
   };
 
   const updateTodoStatus = (id, status) => {
@@ -101,6 +123,17 @@ function App() {
 
   const moveToActive = (id) => {
     updateTodoStatus(id, "active");
+  };
+
+  const updateTodoPriority = (id, value) => {
+    if (!TODO_PRIORITIES.includes(value)) {
+      return;
+    }
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, priority: value } : todo
+      )
+    );
   };
 
   const removeTodo = (id) => {
@@ -157,6 +190,24 @@ function App() {
       </>
     );
 
+    const currentPriority = TODO_PRIORITIES.includes(todo.priority)
+      ? todo.priority
+      : DEFAULT_PRIORITY;
+
+    const nextPriority = getNextPriority(currentPriority);
+
+    const priorityBadge = (
+      <button
+        type="button"
+        className={`todo-priority-badge priority-${currentPriority}`}
+        onClick={() => updateTodoPriority(todo.id, nextPriority)}
+        title={`priority: ${currentPriority}. click to set ${nextPriority}.`}
+        aria-label={`priority ${currentPriority}. next: ${nextPriority}`}
+      >
+        {currentPriority}
+      </button>
+    );
+
     const showFooterActions =
       todo.status === "backlog" ||
       todo.status === "active" ||
@@ -177,14 +228,17 @@ function App() {
               />
               <span>{todo.title}</span>
             </label>
-            <button
-              type="button"
-              className="todo-dismiss"
-              onClick={() => handleDismiss(todo)}
-              aria-label={dismissAriaLabel}
-            >
-              ×
-            </button>
+            <div className="todo-controls">
+              {priorityBadge}
+              <button
+                type="button"
+                className="todo-dismiss"
+                onClick={() => handleDismiss(todo)}
+                aria-label={dismissAriaLabel}
+              >
+                ×
+              </button>
+            </div>
           </div>
           {todo.description && (
             <p className="todo-description">{todo.description}</p>
@@ -219,14 +273,17 @@ function App() {
             />
             <span>{todo.title}</span>
           </label>
-          <button
-            type="button"
-            className="todo-dismiss"
-            onClick={() => handleDismiss(todo)}
-            aria-label={dismissAriaLabel}
-          >
-            ×
-          </button>
+          <div className="todo-controls">
+            {priorityBadge}
+            <button
+              type="button"
+              className="todo-dismiss"
+              onClick={() => handleDismiss(todo)}
+              aria-label={dismissAriaLabel}
+            >
+              ×
+            </button>
+          </div>
         </div>
         {todo.description && (
           <p className="todo-description">{todo.description}</p>
@@ -292,6 +349,21 @@ function App() {
             aria-label="task description"
             rows={2}
           />
+          <label className="composer-priority">
+            priority
+            <select
+              name="priority"
+              value={priority}
+              onChange={(event) => handlePrioritySelect(event.target.value)}
+              aria-label="new task priority"
+            >
+              {PRIORITY_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="submit">add</button>
         </form>
         <div
@@ -366,3 +438,4 @@ function App() {
 }
 
 export default App;
+

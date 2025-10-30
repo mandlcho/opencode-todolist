@@ -66,6 +66,25 @@
   width: 100%;
 }
 
+.composer-priority {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  color: #555555;
+}
+
+.composer-priority select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cccccc;
+  border-radius: 0;
+  background: #ffffff;
+  color: inherit;
+  font-size: 1rem;
+  text-transform: lowercase;
+}
+
 .composer button[type="submit"] {
   border: 1px solid #111111;
   border-radius: 0;
@@ -181,6 +200,12 @@
   width: 100%;
 }
 
+.todo-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .todo-card-header .todo-label {
   flex: 1;
   min-width: 0;
@@ -232,6 +257,40 @@
   color: #555555;
 }
 
+.todo-priority-badge {
+  border: 1px solid #cccccc;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  background: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.todo-priority-badge.priority-high {
+  border-color: #b71c1c;
+  color: #b71c1c;
+}
+
+.todo-priority-badge.priority-medium {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.todo-priority-badge.priority-low {
+  border-color: #388e3c;
+  color: #388e3c;
+}
+
+.todo-priority-badge:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}
+
 .todo.completed span {
   text-decoration: line-through;
   color: #555555;
@@ -258,6 +317,7 @@
 
 .todo-card .todo-description {
   width: 100%;
+  padding-left: 1.5rem;
 }
 
 .todo-actions {

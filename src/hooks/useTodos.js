@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
+export const TODO_PRIORITIES = ["high", "medium", "low"];
+export const DEFAULT_PRIORITY = "medium";
+
 const STORAGE_KEY = "todo-react-app::todos";
+const VALID_PRIORITIES = new Set(TODO_PRIORITIES);
 
 export function useTodos() {
   const [todos, setTodos] = useState(() => {
@@ -26,6 +30,10 @@ export function useTodos() {
             typeof todo.activatedAt === "string" ? todo.activatedAt : null;
           const completedAt =
             typeof todo.completedAt === "string" ? todo.completedAt : null;
+          const priority =
+            typeof todo.priority === "string" && VALID_PRIORITIES.has(todo.priority)
+              ? todo.priority
+              : DEFAULT_PRIORITY;
           return {
             ...todo,
             status,
@@ -33,7 +41,8 @@ export function useTodos() {
             createdAt,
             activatedAt,
             completedAt: status === "completed" ? completedAt : null,
-            completed: status === "completed"
+            completed: status === "completed",
+            priority
           };
         });
       }

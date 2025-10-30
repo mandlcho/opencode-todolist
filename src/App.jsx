@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import "./App.css";
 
@@ -42,13 +42,20 @@ const formatTimestamp = (value) => {
 };
 
 function App() {
-  const { todos, setTodos, stats } = useTodos();
+  const { todos, setTodos, stats, archivedTodos, setArchivedTodos } = useTodos();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
   const [priorityFocus, setPriorityFocus] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+
+  useEffect(() => {
+    if (archivedTodos.length === 0) {
+      setIsArchiveOpen(false);
+    }
+  }, [archivedTodos.length]);
 
   const handlePrioritySelect = (value) => {
     if (TODO_PRIORITIES.includes(value)) {
@@ -61,6 +68,25 @@ function App() {
       return;
     }
     setPriorityFocus((prev) => (prev === value ? "" : value));
+  };
+
+  const archiveCompleted = () => {
+    const toArchive = [];
+    setTodos((prev) => {
+      const remaining = [];
+      prev.forEach((todo) => {
+        if (todo.status === "completed") {
+          const archivedAt = todo.archivedAt ?? new Date().toISOString();
+          toArchive.push({ ...todo, archivedAt });
+        } else {
+          remaining.push(todo);
+        }
+      });
+      return remaining;
+    });
+    if (toArchive.length > 0) {
+      setArchivedTodos((prev) => [...toArchive, ...prev]);
+    }
   };
 
   const reorderByPriorityFocus = useCallback(
@@ -96,6 +122,16 @@ function App() {
       })),
     [todos, reorderByPriorityFocus]
   );
+  const sortedArchivedTodos = useMemo(() => {
+    if (archivedTodos.length === 0) {
+      return [];
+    }
+    return [...archivedTodos].sort((a, b) => {
+      const aTime = new Date(a.archivedAt ?? a.completedAt ?? a.createdAt).getTime();
+      const bTime = new Date(b.archivedAt ?? b.completedAt ?? b.createdAt).getTime();
+      return bTime - aTime;
+    });
+  }, [archivedTodos]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -140,6 +176,36 @@ function App() {
     );
   };
 
+  const renderArchivedTodo = (todo) => {
+    const currentPriority = TODO_PRIORITIES.includes(todo.priority)
+      ? todo.priority
+      : DEFAULT_PRIORITY;
+    const archivedLabel = formatTimestamp(todo.archivedAt);
+    const completedLabel = todo.completedAt ? formatTimestamp(todo.completedAt) : null;
+    return (
+      <li key={todo.id} className="archived-todo">
+        <div className="archived-header">
+          <span className="archived-title">{todo.title}</span>
+          <span
+            className={`todo-priority-badge priority-${currentPriority}`}
+            aria-label={`priority ${currentPriority}`}
+          >
+            {currentPriority}
+          </span>
+        </div>
+        {todo.description && (
+          <p className="archived-description">{todo.description}</p>
+        )}
+        <div className="archived-meta">
+          {archivedLabel && <span>archived: {archivedLabel}</span>}
+          {completedLabel && archivedLabel !== completedLabel && (
+            <span>done: {completedLabel}</span>
+          )}
+        </div>
+      </li>
+    );
+  };
+
   const toggleTodo = (id, checked) => {
     updateTodoStatus(id, checked ? "completed" : "active");
   };
@@ -175,10 +241,6 @@ function App() {
       return;
     }
     removeTodo(todo.id);
-  };
-
-  const clearCompleted = () => {
-    setTodos((prev) => prev.filter((todo) => todo.status !== "completed"));
   };
 
   const renderTodo = (todo, variant = "list") => {
@@ -416,8 +478,12 @@ function App() {
             ))}
           </div>
           <div className="priority-focus-filter">
-            <span>focus priority</span>
-            <div className="priority-focus-options" role="group" aria-label="focus priority">
+            <span>filter</span>
+            <div
+              className="priority-focus-options"
+              role="group"
+              aria-label="filter tasks by priority"
+            >
               {PRIORITY_OPTIONS.map(({ value, label }) => {
                 const isActive = priorityFocus === value;
                 return (
@@ -479,10 +545,43 @@ function App() {
           <span>done: {stats.completed}</span>
           <span>remaining: {stats.remaining}</span>
         </div>
-        <button type="button" onClick={clearCompleted} disabled={stats.completed === 0}>
-          clear done
-        </button>
+        <div className="footer-actions">
+          <button
+            type="button"
+            onClick={archiveCompleted}
+            disabled={stats.completed === 0}
+          >
+            archive
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsArchiveOpen((prev) => !prev)}
+            disabled={archivedTodos.length === 0}
+            aria-expanded={isArchiveOpen}
+            aria-controls="archive-drawer"
+          >
+            {isArchiveOpen
+              ? "hide archive"
+              : `show archive (${archivedTodos.length})`}
+          </button>
+        </div>
       </footer>
+
+      {archivedTodos.length > 0 && (
+        <aside
+          id="archive-drawer"
+          className={`archive-drawer${isArchiveOpen ? " open" : ""}`}
+          role="region"
+          aria-label="archived tasks"
+          aria-hidden={!isArchiveOpen}
+        >
+          <div className="archive-header">
+            <h2>archive</h2>
+            <span>{archivedTodos.length}</span>
+          </div>
+          <ul>{sortedArchivedTodos.map((todo) => renderArchivedTodo(todo))}</ul>
+        </aside>
+      )}
     </main>
   );
 }

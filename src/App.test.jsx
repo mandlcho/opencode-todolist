@@ -74,7 +74,9 @@ describe("App", () => {
       "high priority task"
     ]);
 
-    const focusGroup = screen.getByRole("group", { name: /focus priority/i });
+    const focusGroup = screen.getByRole("group", {
+      name: /filter tasks by priority/i
+    });
     const [highButton, mediumButton, lowButton] =
       within(focusGroup).getAllByRole("button");
 
@@ -98,5 +100,36 @@ describe("App", () => {
       "low priority task",
       "high priority task"
     ]);
+  });
+
+  it("archives completed tasks and shows them in the drawer", () => {
+    render(<App />);
+
+    const titleInput = screen.getByPlaceholderText("add a task to backlog");
+    const addButton = screen.getByRole("button", { name: /add/i });
+
+    fireEvent.change(titleInput, { target: { value: "archive me" } });
+    fireEvent.click(addButton);
+
+    const checkbox = screen.getByRole("checkbox", { name: /archive me/i });
+    fireEvent.click(checkbox);
+
+    const archiveButton = screen.getByRole("button", { name: /^archive$/i });
+    fireEvent.click(archiveButton);
+
+    expect(
+      screen.queryByRole("checkbox", { name: /archive me/i })
+    ).not.toBeInTheDocument();
+
+    const showArchiveButton = screen.getByRole("button", {
+      name: /show archive/i
+    });
+    const drawer = screen.getByRole("region", { name: /archived tasks/i });
+    expect(drawer).not.toHaveClass("open");
+
+    fireEvent.click(showArchiveButton);
+
+    expect(drawer).toHaveClass("open");
+    expect(within(drawer).getByText("archive me")).toBeInTheDocument();
   });
 });

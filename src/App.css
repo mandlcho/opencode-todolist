@@ -81,6 +81,7 @@
   border-radius: 0;
   background: #ffffff;
   color: inherit;
+  font-family: inherit;
   font-size: 1rem;
   text-transform: lowercase;
 }
@@ -313,11 +314,11 @@
   font-size: 0.75rem;
   color: #555555;
   line-height: 1.4;
+  padding-left: 1.5rem;
 }
 
 .todo-card .todo-description {
   width: 100%;
-  padding-left: 1.5rem;
 }
 
 .todo-actions {
@@ -329,6 +330,9 @@
 
 .todo-actions button {
   white-space: nowrap;
+  min-width: 4rem;
+  text-align: center;
+  font-size: 0.75rem;
 }
 
 .card-footer .todo-actions {

@@ -149,6 +149,17 @@ describe("App", () => {
     });
     expect(hideArchiveButton).toBeInTheDocument();
 
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => expect(drawer).not.toHaveClass("open"));
+
+    const reopenButton = screen.getByRole("button", {
+      name: /show archived \(1\)/i
+    });
+    expect(reopenButton).toBeEnabled();
+    fireEvent.click(reopenButton);
+    expect(drawer).toHaveClass("open");
+
     const deleteArchivedButton = within(drawer).getByRole("button", {
       name: /delete archived task archive me/i
     });

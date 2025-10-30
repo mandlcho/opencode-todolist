@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import "./App.css";
 
@@ -50,12 +50,40 @@ function App() {
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const archiveDrawerRef = useRef(null);
+  const archiveToggleRef = useRef(null);
 
   useEffect(() => {
     if (archivedTodos.length === 0) {
       setIsArchiveOpen(false);
     }
   }, [archivedTodos.length]);
+
+  useEffect(() => {
+    if (!isArchiveOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      const drawerNode = archiveDrawerRef.current;
+      const toggleNode = archiveToggleRef.current;
+      const target = event.target;
+
+      if (
+        (drawerNode && drawerNode.contains(target)) ||
+        (toggleNode && toggleNode.contains(target))
+      ) {
+        return;
+      }
+
+      setIsArchiveOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isArchiveOpen, setIsArchiveOpen]);
 
   const handlePrioritySelect = (value) => {
     if (TODO_PRIORITIES.includes(value)) {
@@ -601,6 +629,7 @@ function App() {
           <button
             type="button"
             onClick={() => setIsArchiveOpen((prev) => !prev)}
+            ref={archiveToggleRef}
             disabled={archivedTodos.length === 0}
             aria-expanded={isArchiveOpen}
             aria-controls="archive-drawer"
@@ -615,6 +644,7 @@ function App() {
       {archivedTodos.length > 0 && (
         <aside
           id="archive-drawer"
+          ref={archiveDrawerRef}
           className={`archive-drawer${isArchiveOpen ? " open" : ""}`}
           role="region"
           aria-label="archived tasks"

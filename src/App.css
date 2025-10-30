@@ -55,15 +55,15 @@
   padding: 0.5rem 0.75rem;
   border: 1px solid #cccccc;
   border-radius: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   background: #ffffff;
-  color: inherit;
+  color: #555555;
   text-transform: lowercase;
 }
 
 .composer input[type="text"]::placeholder,
 .composer textarea::placeholder {
-  color: #9aa0a6;
+  color: #bac1c7;
   font-style: italic;
 }
 

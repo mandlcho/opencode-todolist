@@ -1,10 +1,13 @@
 import PropTypes from "prop-types";
+import CalendarPicker from "./CalendarPicker";
 
 function TodoComposer({
   title,
   description,
+  dueDate,
   onTitleChange,
   onDescriptionChange,
+  onDueDateChange,
   onSubmit,
   filter,
   onFilterChange,
@@ -12,33 +15,41 @@ function TodoComposer({
   columns,
   priorityFocus,
   onPriorityFocus,
-  priorityOptions
+  priorityOptions,
+  error = ""
 }) {
   return (
     <section className="composer">
-      <form onSubmit={onSubmit}>
-        <input
-          type="text"
-          name="title"
-          placeholder="add a task to backlog"
-          value={title}
-          onChange={(event) => onTitleChange(event.target.value)}
-          aria-label="task title"
-          required
-          autoComplete="off"
-          className="composer-input"
-        />
-        <textarea
-          name="description"
-          placeholder="add a short description (optional)"
-          value={description}
-          onChange={(event) => onDescriptionChange(event.target.value)}
-          aria-label="task description"
-          rows={2}
-          className="composer-textarea"
-        />
-        <button type="submit">add</button>
-      </form>
+      <div className="composer-layout">
+        <form onSubmit={onSubmit}>
+          <input
+            type="text"
+            name="title"
+            placeholder="add a task to backlog"
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            aria-label="task title"
+            required
+            autoComplete="off"
+            className="composer-input"
+          />
+          <textarea
+            name="description"
+            placeholder="add a short description (optional)"
+            value={description}
+            onChange={(event) => onDescriptionChange(event.target.value)}
+            aria-label="task description"
+            rows={2}
+            className="composer-textarea"
+          />
+          <button type="submit">add</button>
+        </form>
+        <div className="composer-calendar">
+          <h3>due date</h3>
+          <CalendarPicker value={dueDate} onChange={onDueDateChange} />
+        </div>
+      </div>
+      {error && <p className="composer-error">{error}</p>}
       <div className="filter-row">
         <div
           className={viewMode === "list" ? "filters" : "filters filters-hidden"}
@@ -94,6 +105,7 @@ function TodoComposer({
 TodoComposer.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
+  dueDate: PropTypes.string.isRequired,
   priorityOptions: PropTypes.arrayOf(
     PropTypes.shape({
       value: PropTypes.string.isRequired,
@@ -102,6 +114,7 @@ TodoComposer.propTypes = {
   ).isRequired,
   onTitleChange: PropTypes.func.isRequired,
   onDescriptionChange: PropTypes.func.isRequired,
+  onDueDateChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   filter: PropTypes.string.isRequired,
   onFilterChange: PropTypes.func.isRequired,
@@ -113,7 +126,8 @@ TodoComposer.propTypes = {
     })
   ).isRequired,
   priorityFocus: PropTypes.string.isRequired,
-  onPriorityFocus: PropTypes.func.isRequired
+  onPriorityFocus: PropTypes.func.isRequired,
+  error: PropTypes.string
 };
 
 export default TodoComposer;

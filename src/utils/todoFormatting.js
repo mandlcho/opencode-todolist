@@ -27,3 +27,20 @@ export const formatTimestamp = (value) => {
   }
 };
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export const formatDate = (value) => {
+  if (!value) return "";
+  if (DATE_ONLY_PATTERN.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString(undefined, { dateStyle: "medium" });
+  }
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, { dateStyle: "medium" });
+  } catch (error) {
+    return value;
+  }
+};

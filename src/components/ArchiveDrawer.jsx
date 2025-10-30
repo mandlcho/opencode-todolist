@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { TODO_PRIORITIES, DEFAULT_PRIORITY } from "../hooks/useTodos";
-import { formatTimestamp } from "../utils/todoFormatting";
+import { formatTimestamp, formatDate } from "../utils/todoFormatting";
 
 function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
   if (todos.length === 0) {
@@ -29,6 +29,7 @@ function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
           const completedLabel = todo.completedAt
             ? formatTimestamp(todo.completedAt)
             : null;
+          const dueLabel = todo.dueDate ? formatDate(todo.dueDate) : null;
           return (
             <li key={todo.id} className="archived-todo">
               <div className="archived-header">
@@ -59,6 +60,7 @@ function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
               </p>
               <div className="archived-meta">
                 {archivedLabel && <span>archived: {archivedLabel}</span>}
+                {dueLabel && <span>due: {dueLabel}</span>}
                 {completedLabel && archivedLabel !== completedLabel && (
                   <span>done: {completedLabel}</span>
                 )}

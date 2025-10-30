@@ -8,6 +8,19 @@ describe("App", () => {
     window.localStorage.clear();
   });
 
+  const selectCalendarDate = () => {
+    const dateButtons = screen
+      .getAllByRole("button", { name: /^select/i })
+      .filter((button) => button.textContent?.trim());
+    const target =
+      dateButtons.find((button) => button.getAttribute("aria-pressed") !== "true") ??
+      dateButtons[0];
+    if (!target) {
+      throw new Error("No selectable calendar date found");
+    }
+    fireEvent.click(target);
+  };
+
   it("renders heading", () => {
     render(<App />);
     expect(screen.getByRole("heading", { name: /tasks/i })).toBeInTheDocument();
@@ -18,6 +31,7 @@ describe("App", () => {
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
     fireEvent.change(titleInput, { target: { value: "write docs" } });
+    selectCalendarDate();
     fireEvent.click(screen.getByRole("button", { name: /add/i }));
 
     const priorityBadge = screen.getByRole("button", {
@@ -43,6 +57,7 @@ describe("App", () => {
 
     const addTodo = (title) => {
       fireEvent.change(titleInput, { target: { value: title } });
+      selectCalendarDate();
       fireEvent.click(addButton);
     };
 
@@ -116,6 +131,7 @@ describe("App", () => {
     const addButton = screen.getByRole("button", { name: /add/i });
 
     fireEvent.change(titleInput, { target: { value: "archive me" } });
+    selectCalendarDate();
     fireEvent.click(addButton);
 
     const checkbox = screen.getByRole("checkbox", { name: /archive me/i });

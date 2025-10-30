@@ -27,6 +27,10 @@ const normalizeTodo = (todo, { archived = false } = {}) => {
     typeof todo.activatedAt === "string" ? todo.activatedAt : null;
   const completedAt =
     typeof todo.completedAt === "string" ? todo.completedAt : null;
+  const dueDate =
+    typeof todo.dueDate === "string" && todo.dueDate.trim()
+      ? todo.dueDate.trim()
+      : null;
   const priority =
     typeof todo.priority === "string" && VALID_PRIORITIES.has(todo.priority)
       ? todo.priority
@@ -49,7 +53,8 @@ const normalizeTodo = (todo, { archived = false } = {}) => {
     completedAt: isCompleted ? completedAt : null,
     completed: isCompleted,
     priority,
-    archivedAt
+    archivedAt,
+    dueDate
   };
 };
 

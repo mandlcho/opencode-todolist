@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { TODO_PRIORITIES, DEFAULT_PRIORITY } from "../hooks/useTodos";
-import { formatTimestamp, getNextPriority } from "../utils/todoFormatting";
+import { formatTimestamp, formatDate, getNextPriority } from "../utils/todoFormatting";
 
 function TodoListItem({
   todo,
@@ -18,6 +18,7 @@ function TodoListItem({
   const completedLabel = todo.completedAt
     ? formatTimestamp(todo.completedAt)
     : null;
+  const dueLabel = todo.dueDate ? formatDate(todo.dueDate) : null;
 
   const currentPriority = TODO_PRIORITIES.includes(todo.priority)
     ? todo.priority
@@ -97,6 +98,7 @@ function TodoListItem({
         <div className="todo-meta">
           <span>created: {createdLabel || "unknown"}</span>
           <span>activated: {activatedLabel ? activatedLabel : "not yet"}</span>
+          {dueLabel && <span>due: {dueLabel}</span>}
           {completedLabel && <span>done: {completedLabel}</span>}
         </div>
         {footerActions}
@@ -115,7 +117,8 @@ TodoListItem.propTypes = {
     completed: PropTypes.bool,
     createdAt: PropTypes.string,
     activatedAt: PropTypes.string,
-    completedAt: PropTypes.string
+    completedAt: PropTypes.string,
+    dueDate: PropTypes.string
   }).isRequired,
   onToggle: PropTypes.func.isRequired,
   onMoveToActive: PropTypes.func.isRequired,

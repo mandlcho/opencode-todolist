@@ -8,6 +8,7 @@ import AppFooter from "./components/AppFooter";
 import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import { useListDragAndDrop } from "./hooks/useListDragAndDrop";
 import { useBoardDragAndDrop } from "./hooks/useBoardDragAndDrop";
+import { useThemePreference } from "./hooks/useThemePreference";
 import { PRIORITY_OPTIONS } from "./utils/todoFormatting";
 import "./App.css";
 
@@ -27,14 +28,17 @@ function App() {
   const { todos, setTodos, stats, archivedTodos, setArchivedTodos } = useTodos();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [priorityFocus, setPriorityFocus] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [composerError, setComposerError] = useState("");
   const archiveDrawerRef = useRef(null);
   const archiveToggleRef = useRef(null);
   const isListView = viewMode === "list";
   const isCardView = viewMode === "card";
+  const { theme, setTheme } = useThemePreference();
 
   useEffect(() => {
     if (archivedTodos.length === 0) {
@@ -178,10 +182,21 @@ function App() {
     setTodos
   });
 
+  const handleDueDateChange = useCallback((nextValue) => {
+    setDueDate(nextValue);
+    if (nextValue) {
+      setComposerError("");
+    }
+  }, []);
+
   const handleSubmit = useCallback(
     (event) => {
       event.preventDefault();
       if (!title.trim()) return;
+      if (!dueDate) {
+        setComposerError("pick a due date before adding the task.");
+        return;
+      }
 
       const nextTodo = {
         id: crypto.randomUUID(),
@@ -191,14 +206,17 @@ function App() {
         status: "backlog",
         completed: false,
         activatedAt: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        dueDate: dueDate ? dueDate.trim() : null
       };
 
       setTodos((prev) => [nextTodo, ...prev]);
       setTitle("");
       setDescription("");
+      setDueDate("");
+      setComposerError("");
     },
-    [title, description, setTodos]
+    [title, description, dueDate, setTodos]
   );
 
   const updateTodoStatus = useCallback(
@@ -301,14 +319,21 @@ function App() {
 
   return (
     <main className="app-shell">
-      <AppHeader viewMode={viewMode} onViewModeChange={setViewMode} />
+      <AppHeader
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        themeMode={theme}
+        onThemeModeChange={setTheme}
+      />
 
       <TodoComposer
         title={title}
         description={description}
+        dueDate={dueDate}
         priorityOptions={PRIORITY_OPTIONS}
         onTitleChange={setTitle}
         onDescriptionChange={setDescription}
+        onDueDateChange={handleDueDateChange}
         onSubmit={handleSubmit}
         filter={filter}
         onFilterChange={setFilter}
@@ -316,6 +341,7 @@ function App() {
         columns={CARD_COLUMNS}
         priorityFocus={priorityFocus}
         onPriorityFocus={handlePriorityFocus}
+        error={composerError}
       />
 
       <section

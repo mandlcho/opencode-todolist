@@ -203,6 +203,10 @@ function App() {
     );
   };
 
+  const removeArchivedTodo = (id) => {
+    setArchivedTodos((prev) => prev.filter((todo) => todo.id !== id));
+  };
+
   const renderArchivedTodo = (todo) => {
     const currentPriority = TODO_PRIORITIES.includes(todo.priority)
       ? todo.priority
@@ -213,12 +217,22 @@ function App() {
       <li key={todo.id} className="archived-todo">
         <div className="archived-header">
           <span className="archived-title">{todo.title}</span>
-          <span
-            className={`todo-priority-badge priority-${currentPriority}`}
-            aria-label={`priority ${currentPriority}`}
-          >
-            {currentPriority}
-          </span>
+          <div className="archived-actions">
+            <span
+              className={`todo-priority-badge priority-${currentPriority}`}
+              aria-label={`priority ${currentPriority}`}
+            >
+              {currentPriority}
+            </span>
+            <button
+              type="button"
+              className="archived-delete"
+              onClick={() => removeArchivedTodo(todo.id)}
+              aria-label={`delete archived task ${todo.title}`}
+            >
+              X
+            </button>
+          </div>
         </div>
         {todo.description && (
           <p className="archived-description">{todo.description}</p>

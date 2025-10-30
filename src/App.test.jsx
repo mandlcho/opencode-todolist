@@ -140,9 +140,27 @@ describe("App", () => {
     expect(drawer).toHaveClass("open");
     expect(within(drawer).getAllByText("archive me")).toHaveLength(1);
 
+    expect(
+      within(drawer).queryByRole("button", { name: /priority/i })
+    ).toBeNull();
+
     const hideArchiveButton = screen.getByRole("button", {
       name: /hide archived/i
     });
     expect(hideArchiveButton).toBeInTheDocument();
+
+    const deleteArchivedButton = within(drawer).getByRole("button", {
+      name: /delete archived task archive me/i
+    });
+    fireEvent.click(deleteArchivedButton);
+
+    await waitFor(() =>
+      expect(document.getElementById("archive-drawer")).toBeNull()
+    );
+
+    const showArchivedEmptyButton = await screen.findByRole("button", {
+      name: /show archived \(0\)/i
+    });
+    expect(showArchivedEmptyButton).toBeDisabled();
   });
 });

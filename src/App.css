@@ -61,30 +61,16 @@
   text-transform: lowercase;
 }
 
+.composer input[type="text"]::placeholder,
+.composer textarea::placeholder {
+  color: #9aa0a6;
+  font-style: italic;
+}
+
 .composer textarea {
   resize: vertical;
   min-height: 4.5rem;
   width: 100%;
-}
-
-.composer-priority {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  text-transform: lowercase;
-  color: #555555;
-}
-
-.composer-priority select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #cccccc;
-  border-radius: 0;
-  background: #ffffff;
-  color: inherit;
-  font-family: inherit;
-  font-size: 1rem;
-  text-transform: lowercase;
 }
 
 .composer button[type="submit"] {

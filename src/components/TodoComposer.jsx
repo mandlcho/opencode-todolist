@@ -3,18 +3,16 @@ import PropTypes from "prop-types";
 function TodoComposer({
   title,
   description,
-  priority,
-  priorityOptions,
   onTitleChange,
   onDescriptionChange,
-  onPriorityChange,
   onSubmit,
   filter,
   onFilterChange,
   viewMode,
   columns,
   priorityFocus,
-  onPriorityFocus
+  onPriorityFocus,
+  priorityOptions
 }) {
   return (
     <section className="composer">
@@ -28,6 +26,7 @@ function TodoComposer({
           aria-label="task title"
           required
           autoComplete="off"
+          className="composer-input"
         />
         <textarea
           name="description"
@@ -36,22 +35,8 @@ function TodoComposer({
           onChange={(event) => onDescriptionChange(event.target.value)}
           aria-label="task description"
           rows={2}
+          className="composer-textarea"
         />
-        <label className="composer-priority">
-          priority
-          <select
-            name="priority"
-            value={priority}
-            onChange={(event) => onPriorityChange(event.target.value)}
-            aria-label="new task priority"
-          >
-            {priorityOptions.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
         <button type="submit">add</button>
       </form>
       <div className="filter-row">
@@ -109,7 +94,6 @@ function TodoComposer({
 TodoComposer.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
-  priority: PropTypes.string.isRequired,
   priorityOptions: PropTypes.arrayOf(
     PropTypes.shape({
       value: PropTypes.string.isRequired,
@@ -118,7 +102,6 @@ TodoComposer.propTypes = {
   ).isRequired,
   onTitleChange: PropTypes.func.isRequired,
   onDescriptionChange: PropTypes.func.isRequired,
-  onPriorityChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   filter: PropTypes.string.isRequired,
   onFilterChange: PropTypes.func.isRequired,
@@ -134,4 +117,3 @@ TodoComposer.propTypes = {
 };
 
 export default TodoComposer;
-

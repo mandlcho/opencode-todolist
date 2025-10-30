@@ -17,48 +17,55 @@ describe("App", () => {
     render(<App />);
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
-    const composerPriority = screen.getByLabelText("new task priority");
-
-    expect(composerPriority).toHaveValue("medium");
-
-    fireEvent.change(composerPriority, { target: { value: "high" } });
     fireEvent.change(titleInput, { target: { value: "write docs" } });
     fireEvent.click(screen.getByRole("button", { name: /add/i }));
 
     const priorityBadge = screen.getByRole("button", {
-      name: /priority high/i
-    });
-    fireEvent.click(priorityBadge);
-
-    const mediumBadge = screen.getByRole("button", {
       name: /priority medium/i
     });
-    fireEvent.click(mediumBadge);
 
+    fireEvent.click(priorityBadge);
     expect(
       screen.getByRole("button", { name: /priority low/i })
     ).toBeInTheDocument();
-    expect(composerPriority).toHaveValue("medium");
+
+    fireEvent.click(screen.getByRole("button", { name: /priority low/i }));
+    expect(
+      screen.getByRole("button", { name: /priority high/i })
+    ).toBeInTheDocument();
   });
 
   it("reorders todos when a priority focus is selected", () => {
     render(<App />);
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
-    const composerPriority = screen.getByLabelText("new task priority");
     const addButton = screen.getByRole("button", { name: /add/i });
 
-    const addTodo = (title, priorityValue) => {
-      if (priorityValue) {
-        fireEvent.change(composerPriority, { target: { value: priorityValue } });
-      }
+    const addTodo = (title) => {
       fireEvent.change(titleInput, { target: { value: title } });
       fireEvent.click(addButton);
     };
 
-    addTodo("high priority task", "high");
-    addTodo("low priority task", "low");
-    addTodo("medium priority task", "medium");
+    addTodo("high priority task");
+    addTodo("low priority task");
+    addTodo("medium priority task");
+
+    const cyclePriority = (title, clicks) => {
+      const label = screen.getByText(title);
+      const item = label.closest("li");
+      if (!item) {
+        throw new Error(`Todo item for ${title} not found`);
+      }
+      for (let i = 0; i < clicks; i += 1) {
+        const badge = within(item).getByRole("button", { name: /^priority/i });
+        fireEvent.click(badge);
+      }
+    };
+
+    // Default medium -> click twice for high (medium -> low -> high)
+    cyclePriority("high priority task", 2);
+    // Default medium -> click once for low
+    cyclePriority("low priority task", 1);
 
     const list = screen.getByRole("list");
     const getTitles = () =>

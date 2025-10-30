@@ -27,7 +27,6 @@ function App() {
   const { todos, setTodos, stats, archivedTodos, setArchivedTodos } = useTodos();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState(DEFAULT_PRIORITY);
   const [priorityFocus, setPriorityFocus] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
@@ -68,12 +67,6 @@ function App() {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isArchiveOpen]);
-
-  const handlePrioritySelect = useCallback((value) => {
-    if (TODO_PRIORITIES.includes(value)) {
-      setPriority(value);
-    }
-  }, []);
 
   const handlePriorityFocus = useCallback((value) => {
     if (!TODO_PRIORITIES.includes(value)) {
@@ -194,7 +187,7 @@ function App() {
         id: crypto.randomUUID(),
         title: title.trim(),
         description: description.trim(),
-        priority,
+        priority: DEFAULT_PRIORITY,
         status: "backlog",
         completed: false,
         activatedAt: null,
@@ -204,9 +197,8 @@ function App() {
       setTodos((prev) => [nextTodo, ...prev]);
       setTitle("");
       setDescription("");
-      setPriority(DEFAULT_PRIORITY);
     },
-    [title, description, priority, setTodos]
+    [title, description, setTodos]
   );
 
   const updateTodoStatus = useCallback(
@@ -314,11 +306,9 @@ function App() {
       <TodoComposer
         title={title}
         description={description}
-        priority={priority}
         priorityOptions={PRIORITY_OPTIONS}
         onTitleChange={setTitle}
         onDescriptionChange={setDescription}
-        onPriorityChange={handlePrioritySelect}
         onSubmit={handleSubmit}
         filter={filter}
         onFilterChange={setFilter}
@@ -379,4 +369,3 @@ function App() {
 }
 
 export default App;
-

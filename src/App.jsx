@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import "./App.css";
 
@@ -46,6 +46,7 @@ function App() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
+  const [priorityFocus, setPriorityFocus] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
 
@@ -55,19 +56,45 @@ function App() {
     }
   };
 
-  const filteredTodos = useMemo(
-    () => todos.filter(FILTERS[filter]),
-    [todos, filter]
+  const handlePriorityFocus = (value) => {
+    if (!TODO_PRIORITIES.includes(value)) {
+      return;
+    }
+    setPriorityFocus((prev) => (prev === value ? "" : value));
+  };
+
+  const reorderByPriorityFocus = useCallback(
+    (items) => {
+      if (!priorityFocus || !TODO_PRIORITIES.includes(priorityFocus)) {
+        return items;
+      }
+      const prioritized = [];
+      const others = [];
+      items.forEach((item) => {
+        if (item.priority === priorityFocus) {
+          prioritized.push(item);
+        } else {
+          others.push(item);
+        }
+      });
+      return prioritized.length ? [...prioritized, ...others] : items;
+    },
+    [priorityFocus]
   );
+
+  const filteredTodos = useMemo(() => {
+    const list = todos.filter(FILTERS[filter]);
+    return reorderByPriorityFocus(list);
+  }, [todos, filter, reorderByPriorityFocus]);
 
   const boardColumns = useMemo(
     () =>
       CARD_COLUMNS.map(({ key, label }) => ({
         key,
         label,
-        todos: todos.filter(FILTERS[key])
+        todos: reorderByPriorityFocus(todos.filter(FILTERS[key]))
       })),
-    [todos]
+    [todos, reorderByPriorityFocus]
   );
 
   const handleSubmit = (event) => {
@@ -366,26 +393,49 @@ function App() {
           </label>
           <button type="submit">add</button>
         </form>
-        <div
-          className={viewMode === "list" ? "filters" : "filters filters-hidden"}
-          role="radiogroup"
-          aria-label="filter todos"
-          aria-hidden={viewMode !== "list"}
-        >
-          {CARD_COLUMNS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={filter === key ? "active" : ""}
-              onClick={() => setFilter(key)}
-              role="radio"
-              aria-checked={filter === key}
-              tabIndex={viewMode === "list" ? 0 : -1}
-              disabled={viewMode !== "list"}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="filter-row">
+          <div
+            className={viewMode === "list" ? "filters" : "filters filters-hidden"}
+            role="radiogroup"
+            aria-label="filter todos"
+            aria-hidden={viewMode !== "list"}
+          >
+            {CARD_COLUMNS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={filter === key ? "active" : ""}
+                onClick={() => setFilter(key)}
+                role="radio"
+                aria-checked={filter === key}
+                tabIndex={viewMode === "list" ? 0 : -1}
+                disabled={viewMode !== "list"}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="priority-focus-filter">
+            <span>focus priority</span>
+            <div className="priority-focus-options" role="group" aria-label="focus priority">
+              {PRIORITY_OPTIONS.map(({ value, label }) => {
+                const isActive = priorityFocus === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`priority-focus-button priority-${value}${
+                      isActive ? " active" : ""
+                    }`}
+                    onClick={() => handlePriorityFocus(value)}
+                    aria-pressed={isActive}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 

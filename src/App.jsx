@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AppHeader from "./components/AppHeader";
+import TodoComposer from "./components/TodoComposer";
+import TodoList from "./components/TodoList";
+import TodoBoard from "./components/TodoBoard";
+import ArchiveDrawer from "./components/ArchiveDrawer";
+import AppFooter from "./components/AppFooter";
 import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
+import { useListDragAndDrop } from "./hooks/useListDragAndDrop";
+import { useBoardDragAndDrop } from "./hooks/useBoardDragAndDrop";
+import { PRIORITY_OPTIONS } from "./utils/todoFormatting";
 import "./App.css";
 
 const FILTERS = {
@@ -14,33 +23,6 @@ const CARD_COLUMNS = [
   { key: "completed", label: "done" }
 ];
 
-const PRIORITY_OPTIONS = TODO_PRIORITIES.map((value) => ({
-  value,
-  label: value.charAt(0).toUpperCase() + value.slice(1)
-}));
-
-const getNextPriority = (current) => {
-  const index = TODO_PRIORITIES.indexOf(current);
-  if (index === -1) {
-    return DEFAULT_PRIORITY;
-  }
-  return TODO_PRIORITIES[(index + 1) % TODO_PRIORITIES.length];
-};
-
-const formatTimestamp = (value) => {
-  if (!value) return "";
-  try {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short"
-    });
-  } catch (error) {
-    return value;
-  }
-};
-
 function App() {
   const { todos, setTodos, stats, archivedTodos, setArchivedTodos } = useTodos();
   const [title, setTitle] = useState("");
@@ -50,13 +32,6 @@ function App() {
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
-  const [draggingTodoId, setDraggingTodoId] = useState(null);
-  const [dragOverTodoId, setDragOverTodoId] = useState(null);
-  const [dragOverPosition, setDragOverPosition] = useState("before");
-  const [cardDraggingId, setCardDraggingId] = useState(null);
-  const [cardDragOverColumn, setCardDragOverColumn] = useState(null);
-  const [cardDragOverTodoId, setCardDragOverTodoId] = useState(null);
-  const [cardDragPosition, setCardDragPosition] = useState("before");
   const archiveDrawerRef = useRef(null);
   const archiveToggleRef = useRef(null);
   const isListView = viewMode === "list";
@@ -92,35 +67,22 @@ function App() {
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
-  }, [isArchiveOpen, setIsArchiveOpen]);
+  }, [isArchiveOpen]);
 
-  const resetDragState = useCallback(() => {
-    setDraggingTodoId(null);
-    setDragOverTodoId(null);
-    setDragOverPosition("before");
-  }, []);
-
-  const resetCardDragState = useCallback(() => {
-    setCardDraggingId(null);
-    setCardDragOverColumn(null);
-    setCardDragOverTodoId(null);
-    setCardDragPosition("before");
-  }, []);
-
-  const handlePrioritySelect = (value) => {
+  const handlePrioritySelect = useCallback((value) => {
     if (TODO_PRIORITIES.includes(value)) {
       setPriority(value);
     }
-  };
+  }, []);
 
-  const handlePriorityFocus = (value) => {
+  const handlePriorityFocus = useCallback((value) => {
     if (!TODO_PRIORITIES.includes(value)) {
       return;
     }
     setPriorityFocus((prev) => (prev === value ? "" : value));
-  };
+  }, []);
 
-  const archiveCompleted = () => {
+  const archiveCompleted = useCallback(() => {
     if (todos.length === 0) {
       return;
     }
@@ -164,7 +126,7 @@ function App() {
 
       return [...orderedNew, ...remaining];
     });
-  };
+  }, [todos, setTodos, setArchivedTodos]);
 
   const reorderByPriorityFocus = useCallback(
     (items) => {
@@ -190,149 +152,6 @@ function App() {
     return reorderByPriorityFocus(list);
   }, [todos, filter, reorderByPriorityFocus]);
 
-  const reorderListTodos = useCallback(
-    (sourceId, targetId, position = "before") => {
-      if (!sourceId || sourceId === targetId) {
-        return;
-      }
-
-      const displayIds = filteredTodos.map((todo) => todo.id);
-      const sourceIndex = displayIds.indexOf(sourceId);
-      if (sourceIndex === -1) {
-        return;
-      }
-
-      const workingIds = [...displayIds];
-      const [moved] = workingIds.splice(sourceIndex, 1);
-
-      let insertionIndex;
-      if (!targetId) {
-        insertionIndex = workingIds.length;
-      } else {
-        const targetIndex = workingIds.indexOf(targetId);
-        if (targetIndex === -1) {
-          return;
-        }
-        insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
-      }
-
-      workingIds.splice(insertionIndex, 0, moved);
-
-      const hasChanged = workingIds.some((id, index) => id !== displayIds[index]);
-      if (!hasChanged) {
-        return;
-      }
-
-      const displayIdSet = new Set(displayIds);
-
-      setTodos((prev) => {
-        const idToTodo = new Map(prev.map((todo) => [todo.id, todo]));
-        const queue = workingIds.map((id) => idToTodo.get(id));
-        if (queue.some((todo) => !todo)) {
-          return prev;
-        }
-
-        const queueCopy = [...queue];
-        const next = [];
-
-        prev.forEach((todo) => {
-          if (!displayIdSet.has(todo.id)) {
-            next.push(todo);
-            return;
-          }
-
-          const nextTodo = queueCopy.shift();
-          if (nextTodo) {
-            next.push(nextTodo);
-          }
-        });
-
-        return next;
-      });
-    },
-    [filteredTodos, setTodos]
-  );
-
-  const moveTodoInBoard = useCallback(
-    (sourceId, targetStatus, targetId, position = "before") => {
-      if (!sourceId) {
-        return;
-      }
-
-      setTodos((prev) => {
-        const sourceIndex = prev.findIndex((todo) => todo.id === sourceId);
-        if (sourceIndex === -1) {
-          return prev;
-        }
-
-        const sourceTodo = prev[sourceIndex];
-        const timestamp = new Date().toISOString();
-        const nextStatus =
-          typeof targetStatus === "string" ? targetStatus : sourceTodo.status;
-        const statusChanged = nextStatus !== sourceTodo.status;
-
-        const updatedTodo = statusChanged
-          ? {
-              ...sourceTodo,
-              status: nextStatus,
-              completed: nextStatus === "completed",
-              activatedAt:
-                nextStatus === "active"
-                  ? sourceTodo.activatedAt ?? timestamp
-                  : nextStatus === "completed"
-                  ? sourceTodo.activatedAt ?? timestamp
-                  : null,
-              completedAt: nextStatus === "completed" ? timestamp : null
-            }
-          : sourceTodo;
-
-        const remaining = [...prev];
-        remaining.splice(sourceIndex, 1);
-
-        const columnOrder = CARD_COLUMNS.map(({ key }) => key);
-        const computeDefaultInsertion = () => {
-          const matchingIndices = [];
-          remaining.forEach((todo, index) => {
-            if (todo.status === nextStatus) {
-              matchingIndices.push(index);
-            }
-          });
-          if (matchingIndices.length === 0) {
-            const targetColumnIndex = columnOrder.indexOf(nextStatus);
-            if (targetColumnIndex === -1) {
-              return remaining.length;
-            }
-            const afterIndex = remaining.findIndex((todo) => {
-              const statusIndex = columnOrder.indexOf(todo.status);
-              return statusIndex !== -1 && statusIndex > targetColumnIndex;
-            });
-            return afterIndex === -1 ? remaining.length : afterIndex;
-          }
-          return position === "before"
-            ? matchingIndices[0]
-            : matchingIndices[matchingIndices.length - 1] + 1;
-        };
-
-        let insertionIndex = computeDefaultInsertion();
-        if (targetId) {
-          const targetIndex = remaining.findIndex((todo) => todo.id === targetId);
-          if (targetIndex !== -1) {
-            insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
-          }
-        }
-
-        const next = [
-          ...remaining.slice(0, insertionIndex),
-          statusChanged ? updatedTodo : { ...updatedTodo },
-          ...remaining.slice(insertionIndex)
-        ];
-
-        return next;
-      });
-    },
-    [setTodos]
-  );
-
   const boardColumns = useMemo(
     () =>
       CARD_COLUMNS.map(({ key, label }) => ({
@@ -342,6 +161,7 @@ function App() {
       })),
     [todos, reorderByPriorityFocus]
   );
+
   const sortedArchivedTodos = useMemo(() => {
     if (archivedTodos.length === 0) {
       return [];
@@ -353,643 +173,160 @@ function App() {
     });
   }, [archivedTodos]);
 
-  const handleListDragStart = useCallback(
-    (event, todoId) => {
-      if (!isListView) {
-        return;
-      }
-      event.dataTransfer.effectAllowed = "move";
-      try {
-        event.dataTransfer.setData("text/plain", todoId);
-      } catch (error) {
-        // ignore browsers that disallow setData during dragstart
-      }
-      setDraggingTodoId(todoId);
-      setDragOverTodoId(todoId);
-      setDragOverPosition("before");
-    },
-    [isListView]
-  );
+  const listDragAndDrop = useListDragAndDrop({
+    isEnabled: isListView,
+    todos: filteredTodos,
+    setTodos
+  });
 
-  const handleListDragOver = useCallback(
-    (event, todoId) => {
-      if (!isListView || !draggingTodoId) {
-        return;
-      }
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      if (!todoId || todoId === draggingTodoId) {
-        return;
-      }
-      const bounds = event.currentTarget.getBoundingClientRect();
-      const offsetY = event.clientY - bounds.top;
-      const position = offsetY > bounds.height / 2 ? "after" : "before";
+  const boardDragAndDrop = useBoardDragAndDrop({
+    isEnabled: isCardView,
+    columns: CARD_COLUMNS,
+    setTodos
+  });
 
-      setDragOverTodoId((prev) => (prev === todoId ? prev : todoId));
-      setDragOverPosition((prev) => (prev === position ? prev : position));
-    },
-    [isListView, draggingTodoId]
-  );
-
-  const handleListDrop = useCallback(
-    (event, todoId) => {
-      if (!isListView || !draggingTodoId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      reorderListTodos(draggingTodoId, todoId, dragOverPosition);
-      resetDragState();
-    },
-    [
-      isListView,
-      draggingTodoId,
-      dragOverPosition,
-      reorderListTodos,
-      resetDragState
-    ]
-  );
-
-  const handleListContainerDragOver = useCallback(
+  const handleSubmit = useCallback(
     (event) => {
-      if (!isListView || !draggingTodoId) {
-        return;
-      }
       event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      if (event.target === event.currentTarget) {
-        setDragOverTodoId(null);
-        setDragOverPosition("after");
-      }
+      if (!title.trim()) return;
+
+      const nextTodo = {
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        status: "backlog",
+        completed: false,
+        activatedAt: null,
+        createdAt: new Date().toISOString()
+      };
+
+      setTodos((prev) => [nextTodo, ...prev]);
+      setTitle("");
+      setDescription("");
+      setPriority(DEFAULT_PRIORITY);
     },
-    [isListView, draggingTodoId]
+    [title, description, priority, setTodos]
   );
 
-  const handleListContainerDrop = useCallback(
-    (event) => {
-      if (!isListView || !draggingTodoId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (event.target === event.currentTarget) {
-        reorderListTodos(draggingTodoId, null, "after");
-      } else if (dragOverTodoId && dragOverTodoId !== draggingTodoId) {
-        reorderListTodos(draggingTodoId, dragOverTodoId, dragOverPosition);
-      }
-
-      resetDragState();
-    },
-    [
-      isListView,
-      draggingTodoId,
-      dragOverTodoId,
-      dragOverPosition,
-      reorderListTodos,
-      resetDragState
-    ]
-  );
-
-  const handleListDragEnd = useCallback(() => {
-    if (!draggingTodoId) {
-      return;
-    }
-    resetDragState();
-  }, [draggingTodoId, resetDragState]);
-
-  const handleCardDragStart = useCallback(
-    (event, todoId, columnKey) => {
-      if (!isCardView) {
-        return;
-      }
-      event.dataTransfer.effectAllowed = "move";
-      try {
-        event.dataTransfer.setData("text/plain", todoId);
-      } catch (error) {
-        // ignore setData failures in some browsers
-      }
-      setCardDraggingId(todoId);
-      setCardDragOverColumn(columnKey);
-      setCardDragOverTodoId(todoId);
-      setCardDragPosition("before");
-    },
-    [isCardView]
-  );
-
-  const handleCardDragOver = useCallback(
-    (event, todoId, columnKey) => {
-      if (!isCardView || !cardDraggingId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      event.dataTransfer.dropEffect = "move";
-      if (todoId === cardDraggingId) {
-        return;
-      }
-      const bounds = event.currentTarget.getBoundingClientRect();
-      const offsetY = event.clientY - bounds.top;
-      const position = offsetY > bounds.height / 2 ? "after" : "before";
-      setCardDragOverColumn(columnKey);
-      setCardDragOverTodoId(todoId);
-      setCardDragPosition(position);
-    },
-    [isCardView, cardDraggingId]
-  );
-
-  const handleCardDropOnTodo = useCallback(
-    (event, todoId, columnKey) => {
-      if (!isCardView || !cardDraggingId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      if (todoId === cardDraggingId) {
-        resetCardDragState();
-        return;
-      }
-      moveTodoInBoard(cardDraggingId, columnKey, todoId, cardDragPosition);
-      resetCardDragState();
-    },
-    [
-      isCardView,
-      cardDraggingId,
-      cardDragPosition,
-      moveTodoInBoard,
-      resetCardDragState
-    ]
-  );
-
-  const handleCardColumnDragOver = useCallback(
-    (event, columnKey) => {
-      if (!isCardView || !cardDraggingId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      event.dataTransfer.dropEffect = "move";
-      setCardDragOverColumn(columnKey);
-      setCardDragOverTodoId(null);
-      setCardDragPosition("after");
-    },
-    [isCardView, cardDraggingId]
-  );
-
-  const handleCardColumnDrop = useCallback(
-    (event, columnKey) => {
-      if (!isCardView || !cardDraggingId) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      moveTodoInBoard(cardDraggingId, columnKey, null, "after");
-      resetCardDragState();
-    },
-    [isCardView, cardDraggingId, moveTodoInBoard, resetCardDragState]
-  );
-
-  const handleCardDragEnd = useCallback(() => {
-    if (!cardDraggingId) {
-      return;
-    }
-    resetCardDragState();
-  }, [cardDraggingId, resetCardDragState]);
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (!title.trim()) return;
-
-    const nextTodo = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      status: "backlog",
-      completed: false,
-      activatedAt: null,
-      createdAt: new Date().toISOString()
-    };
-
-    setTodos((prev) => [nextTodo, ...prev]);
-    setTitle("");
-    setDescription("");
-    setPriority(DEFAULT_PRIORITY);
-  };
-
-  const updateTodoStatus = (id, status) => {
-    const timestamp = new Date().toISOString();
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id
-          ? {
-              ...todo,
-              status,
-              completed: status === "completed",
-              activatedAt:
-                status === "active"
-                  ? todo.activatedAt ?? timestamp
-                  : status === "completed"
-                  ? todo.activatedAt ?? timestamp
-                  : null,
-              completedAt: status === "completed" ? timestamp : null
-            }
-          : todo
-      )
-    );
-  };
-
-  const removeArchivedTodo = (id) => {
-    setArchivedTodos((prev) => prev.filter((todo) => todo.id !== id));
-  };
-
-  const renderArchivedTodo = (todo) => {
-    const currentPriority = TODO_PRIORITIES.includes(todo.priority)
-      ? todo.priority
-      : DEFAULT_PRIORITY;
-    const archivedLabel = formatTimestamp(todo.archivedAt);
-    const completedLabel = todo.completedAt ? formatTimestamp(todo.completedAt) : null;
-    return (
-      <li key={todo.id} className="archived-todo">
-        <div className="archived-header">
-          <span className="archived-title">{todo.title}</span>
-          <div className="archived-actions">
-            <span
-              className={`todo-priority-badge priority-${currentPriority}`}
-              aria-label={`priority ${currentPriority}`}
-            >
-              {currentPriority}
-            </span>
-            <button
-              type="button"
-              className="archived-delete"
-              onClick={() => removeArchivedTodo(todo.id)}
-              aria-label={`delete archived task ${todo.title}`}
-            >
-              X
-            </button>
-          </div>
-        </div>
-        <p
-          className={`archived-description${
-            todo.description ? "" : " archived-description--empty"
-          }`}
-        >
-          {todo.description || "\u00a0"}
-        </p>
-        <div className="archived-meta">
-          {archivedLabel && <span>archived: {archivedLabel}</span>}
-          {completedLabel && archivedLabel !== completedLabel && (
-            <span>done: {completedLabel}</span>
-          )}
-        </div>
-      </li>
-    );
-  };
-
-  const toggleTodo = (id, checked) => {
-    updateTodoStatus(id, checked ? "completed" : "active");
-  };
-
-  const moveToBacklog = (id) => {
-    updateTodoStatus(id, "backlog");
-  };
-
-  const moveToActive = (id) => {
-    updateTodoStatus(id, "active");
-  };
-
-  const updateTodoPriority = (id, value) => {
-    if (!TODO_PRIORITIES.includes(value)) {
-      return;
-    }
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, priority: value } : todo
-      )
-    );
-  };
-
-  const removeTodo = (id) => {
-    setTodos((prev) =>
-      prev.filter((todo) => todo.id !== id)
-    );
-  };
-
-  const handleDismiss = (todo) => {
-    if (todo.status === "active") {
-      moveToBacklog(todo.id);
-      return;
-    }
-    removeTodo(todo.id);
-  };
-
-  const renderTodo = (todo, variant = "list", columnKey = "") => {
-    const createdLabel = formatTimestamp(todo.createdAt);
-    const activatedLabel = todo.activatedAt
-      ? formatTimestamp(todo.activatedAt)
-      : null;
-    const completedLabel = todo.completedAt
-      ? formatTimestamp(todo.completedAt)
-      : null;
-    const isCard = variant === "card";
-    const cardColumnKey = columnKey || todo.status;
-    const dismissAriaLabel =
-      todo.status === "active"
-        ? `return ${todo.title} to backlog`
-        : `delete ${todo.title}`;
-    const footerActions = (
-      <>
-        {todo.status === "backlog" && (
-          <button
-            type="button"
-            onClick={() => moveToActive(todo.id)}
-            aria-label={`start ${todo.title}`}
-          >
-            start
-          </button>
-        )}
-        {todo.status === "active" && (
-          <button
-            type="button"
-            onClick={() => updateTodoStatus(todo.id, "completed")}
-            aria-label={`mark ${todo.title} as done`}
-          >
-            done
-          </button>
-        )}
-      </>
-    );
-
-    const currentPriority = TODO_PRIORITIES.includes(todo.priority)
-      ? todo.priority
-      : DEFAULT_PRIORITY;
-
-    const nextPriority = getNextPriority(currentPriority);
-
-    const priorityBadge = (
-      <button
-        type="button"
-        className={`todo-priority-badge priority-${currentPriority}`}
-        onClick={() => updateTodoPriority(todo.id, nextPriority)}
-        title={`priority: ${currentPriority}. click to set ${nextPriority}.`}
-        aria-label={`priority ${currentPriority}. next: ${nextPriority}`}
-      >
-        {currentPriority}
-      </button>
-    );
-
-    const showFooterActions =
-      todo.status === "backlog" ||
-      todo.status === "active" ||
-      !isCard;
-
-    const isListDragging = isListView && draggingTodoId === todo.id;
-    const isListDropTarget =
-      isListView && dragOverTodoId === todo.id && draggingTodoId !== todo.id;
-    const dropClasses = isListDropTarget
-      ? ` drop-target drop-${dragOverPosition}`
-      : "";
-    const listDragProps = isListView
-      ? {
-          draggable: true,
-          onDragStart: (event) => handleListDragStart(event, todo.id),
-          onDragOver: (event) => handleListDragOver(event, todo.id),
-          onDrop: (event) => handleListDrop(event, todo.id),
-          onDragEnd: handleListDragEnd,
-          "aria-grabbed": isListDragging || undefined,
-          "data-drop-position": isListDropTarget ? dragOverPosition : undefined
-        }
-      : {};
-
-    const isCardDragging = isCardView && cardDraggingId === todo.id;
-    const isCardDropTarget =
-      isCardView &&
-      cardDragOverTodoId === todo.id &&
-      cardDraggingId !== todo.id &&
-      cardDragOverColumn === cardColumnKey;
-    const cardDropClasses = isCardDropTarget
-      ? ` card-drop-target card-drop-${cardDragPosition}`
-      : "";
-    const cardDragProps = isCardView
-      ? {
-          draggable: true,
-          onDragStart: (event) => handleCardDragStart(event, todo.id, cardColumnKey),
-          onDragOver: (event) => handleCardDragOver(event, todo.id, cardColumnKey),
-          onDrop: (event) => handleCardDropOnTodo(event, todo.id, cardColumnKey),
-          onDragEnd: handleCardDragEnd,
-          "aria-grabbed": isCardDragging || undefined
-        }
-      : {};
-
-    if (isCard) {
-      return (
-        <li
-          key={todo.id}
-          className={`todo${todo.completed ? " completed" : ""} todo-card${
-            isCardDragging ? " dragging" : ""
-          }${cardDropClasses}`}
-          {...cardDragProps}
-        >
-          <div className="todo-card-header">
-            <label className="todo-label">
-              <input
-                type="checkbox"
-                checked={todo.status === "completed"}
-                onChange={(event) => toggleTodo(todo.id, event.target.checked)}
-              />
-              <span>{todo.title}</span>
-            </label>
-            <div className="todo-controls">
-              {priorityBadge}
-              <button
-                type="button"
-                className="todo-dismiss"
-                onClick={() => handleDismiss(todo)}
-                aria-label={dismissAriaLabel}
-              >
-                ×
-              </button>
-            </div>
-          </div>
-          {todo.description && (
-            <p className="todo-description">{todo.description}</p>
-          )}
-          <div className="todo-footer card-footer">
-            <div className="todo-meta">
-              <span>created: {createdLabel || "unknown"}</span>
-              <span>
-                activated: {activatedLabel ? activatedLabel : "not yet"}
-              </span>
-              {completedLabel && <span>done: {completedLabel}</span>}
-            </div>
-            {showFooterActions && (
-              <div className="todo-actions card-actions">{footerActions}</div>
-            )}
-          </div>
-        </li>
+  const updateTodoStatus = useCallback(
+    (id, status) => {
+      const timestamp = new Date().toISOString();
+      setTodos((prev) =>
+        prev.map((todo) =>
+          todo.id === id
+            ? {
+                ...todo,
+                status,
+                completed: status === "completed",
+                activatedAt:
+                  status === "active"
+                    ? todo.activatedAt ?? timestamp
+                    : status === "completed"
+                    ? todo.activatedAt ?? timestamp
+                    : null,
+                completedAt: status === "completed" ? timestamp : null
+              }
+            : todo
+        )
       );
-    }
+    },
+    [setTodos]
+  );
 
-    return (
-      <li
-        key={todo.id}
-        className={`todo${todo.completed ? " completed" : ""}${
-          isListDragging ? " dragging" : ""
-        }${dropClasses}`}
-        {...listDragProps}
-      >
-        <div className="todo-header">
-          <label className="todo-label">
-            <input
-              type="checkbox"
-              checked={todo.status === "completed"}
-              onChange={(event) => toggleTodo(todo.id, event.target.checked)}
-            />
-            <span>{todo.title}</span>
-          </label>
-          <div className="todo-controls">
-            {priorityBadge}
-            <button
-              type="button"
-              className="todo-dismiss"
-              onClick={() => handleDismiss(todo)}
-              aria-label={dismissAriaLabel}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-        {todo.description && (
-          <p className="todo-description">{todo.description}</p>
-        )}
-        <div className="todo-footer">
-          <div className="todo-meta">
-            <span>created: {createdLabel || "unknown"}</span>
-            <span>
-              activated: {activatedLabel ? activatedLabel : "not yet"}
-            </span>
-            {completedLabel && <span>done: {completedLabel}</span>}
-          </div>
-          <div className="todo-actions">{footerActions}</div>
-        </div>
-      </li>
-    );
-  };
+  const toggleTodo = useCallback(
+    (id, checked) => {
+      updateTodoStatus(id, checked ? "completed" : "active");
+    },
+    [updateTodoStatus]
+  );
+
+  const moveToBacklog = useCallback(
+    (id) => {
+      updateTodoStatus(id, "backlog");
+    },
+    [updateTodoStatus]
+  );
+
+  const moveToActive = useCallback(
+    (id) => {
+      updateTodoStatus(id, "active");
+    },
+    [updateTodoStatus]
+  );
+
+  const updateTodoPriority = useCallback(
+    (id, value) => {
+      if (!TODO_PRIORITIES.includes(value)) {
+        return;
+      }
+      setTodos((prev) =>
+        prev.map((todo) => (todo.id === id ? { ...todo, priority: value } : todo))
+      );
+    },
+    [setTodos]
+  );
+
+  const removeTodo = useCallback(
+    (id) => {
+      setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    },
+    [setTodos]
+  );
+
+  const handleDismiss = useCallback(
+    (todo) => {
+      if (todo.status === "active") {
+        moveToBacklog(todo.id);
+        return;
+      }
+      removeTodo(todo.id);
+    },
+    [moveToBacklog, removeTodo]
+  );
+
+  const removeArchivedTodo = useCallback(
+    (id) => {
+      setArchivedTodos((prev) => prev.filter((todo) => todo.id !== id));
+    },
+    [setArchivedTodos]
+  );
+
+  const todoActions = useMemo(
+    () => ({
+      toggleTodo,
+      moveToActive,
+      updateTodoStatus,
+      updateTodoPriority,
+      handleDismiss
+    }),
+    [toggleTodo, moveToActive, updateTodoStatus, updateTodoPriority, handleDismiss]
+  );
+
+  const handleToggleArchive = useCallback(() => {
+    setIsArchiveOpen((prev) => !prev);
+  }, []);
 
   return (
     <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <h1>tasks</h1>
-          <p>simple task app</p>
-        </div>
-        <div className="view-toggles" role="group" aria-label="view mode">
-          <button
-            type="button"
-            className={viewMode === "list" ? "view-option active" : "view-option"}
-            onClick={() => setViewMode("list")}
-            aria-pressed={viewMode === "list"}
-          >
-            list
-          </button>
-          <button
-            type="button"
-            className={viewMode === "card" ? "view-option active" : "view-option"}
-            onClick={() => setViewMode("card")}
-            aria-pressed={viewMode === "card"}
-          >
-            card
-          </button>
-        </div>
-      </header>
+      <AppHeader viewMode={viewMode} onViewModeChange={setViewMode} />
 
-      <section className="composer">
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="title"
-            placeholder="add a task to backlog"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            aria-label="task title"
-            required
-            autoComplete="off"
-          />
-          <textarea
-            name="description"
-            placeholder="add a short description (optional)"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            aria-label="task description"
-            rows={2}
-          />
-          <label className="composer-priority">
-            priority
-            <select
-              name="priority"
-              value={priority}
-              onChange={(event) => handlePrioritySelect(event.target.value)}
-              aria-label="new task priority"
-            >
-              {PRIORITY_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit">add</button>
-        </form>
-        <div className="filter-row">
-          <div
-            className={viewMode === "list" ? "filters" : "filters filters-hidden"}
-            role="radiogroup"
-            aria-label="filter todos"
-            aria-hidden={viewMode !== "list"}
-          >
-            {CARD_COLUMNS.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                className={filter === key ? "active" : ""}
-                onClick={() => setFilter(key)}
-                role="radio"
-                aria-checked={filter === key}
-                tabIndex={viewMode === "list" ? 0 : -1}
-                disabled={viewMode !== "list"}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="priority-focus-filter">
-            <span>filter</span>
-            <div
-              className="priority-focus-options"
-              role="group"
-              aria-label="filter tasks by priority"
-            >
-              {PRIORITY_OPTIONS.map(({ value, label }) => {
-                const isActive = priorityFocus === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`priority-focus-button priority-${value}${
-                      isActive ? " active" : ""
-                    }`}
-                    onClick={() => handlePriorityFocus(value)}
-                    aria-pressed={isActive}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
+      <TodoComposer
+        title={title}
+        description={description}
+        priority={priority}
+        priorityOptions={PRIORITY_OPTIONS}
+        onTitleChange={setTitle}
+        onDescriptionChange={setDescription}
+        onPriorityChange={handlePrioritySelect}
+        onSubmit={handleSubmit}
+        filter={filter}
+        onFilterChange={setFilter}
+        viewMode={viewMode}
+        columns={CARD_COLUMNS}
+        priorityFocus={priorityFocus}
+        onPriorityFocus={handlePriorityFocus}
+      />
 
       <section
         className={`todo-list${viewMode === "card" ? " card-view" : ""}`}
@@ -999,33 +336,11 @@ function App() {
           todos.length === 0 ? (
             <p className="empty-state">no todos yet. add one above.</p>
           ) : (
-            <div className="todo-board">
-              {boardColumns.map(({ key, label, todos: columnTodos }) => {
-                const isColumnDropTarget =
-                  isCardView &&
-                  cardDragOverColumn === key &&
-                  (!cardDragOverTodoId || cardDragOverTodoId === cardDraggingId);
-                return (
-                  <div
-                    key={key}
-                    className={`todo-column${
-                      isColumnDropTarget ? " column-drop-target" : ""
-                    }`}
-                    onDragOver={(event) => handleCardColumnDragOver(event, key)}
-                    onDrop={(event) => handleCardColumnDrop(event, key)}
-                  >
-                    <h2>{label}</h2>
-                    {columnTodos.length === 0 ? (
-                      <p className="column-empty">nothing here yet</p>
-                    ) : (
-                      <ul>
-                        {columnTodos.map((todo) => renderTodo(todo, "card", key))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <TodoBoard
+              columns={boardColumns}
+              actions={todoActions}
+              dragAndDrop={boardDragAndDrop}
+            />
           )
         ) : filteredTodos.length === 0 ? (
           <p className="empty-state">
@@ -1036,62 +351,32 @@ function App() {
               : "no todos yet. add one above."}
           </p>
         ) : (
-          <ul
-            onDragOver={handleListContainerDragOver}
-            onDrop={handleListContainerDrop}
-          >
-            {filteredTodos.map((todo) => renderTodo(todo))}
-          </ul>
+          <TodoList
+            todos={filteredTodos}
+            actions={todoActions}
+            dragAndDrop={listDragAndDrop}
+          />
         )}
       </section>
 
-      <footer className="app-footer">
-        <div className="footer-stats">
-          <span>total: {stats.total}</span>
-          <span>done: {stats.completed}</span>
-          <span>remaining: {stats.remaining}</span>
-        </div>
-        <div className="footer-actions">
-          <button
-            type="button"
-            onClick={archiveCompleted}
-            disabled={stats.completed === 0}
-          >
-            archive
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsArchiveOpen((prev) => !prev)}
-            ref={archiveToggleRef}
-            disabled={archivedTodos.length === 0}
-            aria-expanded={isArchiveOpen}
-            aria-controls="archive-drawer"
-          >
-            {isArchiveOpen
-              ? "hide archived"
-              : `show archived (${archivedTodos.length})`}
-          </button>
-        </div>
-      </footer>
+      <AppFooter
+        stats={stats}
+        onArchiveCompleted={archiveCompleted}
+        onToggleArchive={handleToggleArchive}
+        isArchiveOpen={isArchiveOpen}
+        archivedCount={archivedTodos.length}
+        archiveToggleRef={archiveToggleRef}
+      />
 
-      {archivedTodos.length > 0 && (
-        <aside
-          id="archive-drawer"
-          ref={archiveDrawerRef}
-          className={`archive-drawer${isArchiveOpen ? " open" : ""}`}
-          role="region"
-          aria-label="archived tasks"
-          aria-hidden={!isArchiveOpen}
-        >
-          <div className="archive-header">
-            <h2>archive</h2>
-            <span>{archivedTodos.length}</span>
-          </div>
-          <ul>{sortedArchivedTodos.map((todo) => renderArchivedTodo(todo))}</ul>
-        </aside>
-      )}
+      <ArchiveDrawer
+        todos={sortedArchivedTodos}
+        isOpen={isArchiveOpen}
+        drawerRef={archiveDrawerRef}
+        onRemove={removeArchivedTodo}
+      />
     </main>
   );
 }
 
 export default App;
+

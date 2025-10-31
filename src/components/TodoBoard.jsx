@@ -1,7 +1,19 @@
 import PropTypes from "prop-types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import TodoCard from "./TodoCard";
 import { useFlipAnimation } from "../hooks/useFlipAnimation";
+import { ARCHIVED_TODO_DRAG_TYPE } from "../utils/dragTypes";
+
+const hasArchivedPayload = (event) => {
+  const types = event?.dataTransfer?.types;
+  if (!types) {
+    return false;
+  }
+  if (typeof types.includes === "function") {
+    return types.includes(ARCHIVED_TODO_DRAG_TYPE);
+  }
+  return Array.from(types).includes(ARCHIVED_TODO_DRAG_TYPE);
+};
 
 function TodoBoard({
   columns,
@@ -10,8 +22,11 @@ function TodoBoard({
   categoryLookup = null,
   calendarFocusDate = "",
   onAssignCategory = null,
-  onRemoveCategory = null
+  onRemoveCategory = null,
+  onRestoreArchived = null
 }) {
+  const [archivedDropColumn, setArchivedDropColumn] = useState("");
+
   const cardOrderSignature = useMemo(() => {
     return columns
       .map(({ key, todos }) =>
@@ -39,8 +54,48 @@ function TodoBoard({
             key={key}
             className={`todo-column${
               columnDnD.isDropTarget ? " column-drop-target" : ""
-            }`}
-            {...(columnDnD.columnProps ?? {})}
+            }${archivedDropColumn === key ? " column-drop-target" : ""}`}
+            {...(() => {
+              const baseProps = columnDnD.columnProps ?? {};
+              return {
+                ...baseProps,
+                onDragOver: (event) => {
+                  if (hasArchivedPayload(event)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.dataTransfer.dropEffect = "copy";
+                    setArchivedDropColumn(key);
+                    return;
+                  }
+                  setArchivedDropColumn((prev) => (prev === key ? "" : prev));
+                  baseProps.onDragOver?.(event);
+                },
+                onDrop: (event) => {
+                  if (hasArchivedPayload(event)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const todoId = event.dataTransfer.getData(ARCHIVED_TODO_DRAG_TYPE);
+                    if (todoId && typeof onRestoreArchived === "function") {
+                      onRestoreArchived(todoId, {
+                        status: key,
+                        referenceId: null,
+                        position: "after"
+                      });
+                    }
+                    setArchivedDropColumn("");
+                    return;
+                  }
+                  baseProps.onDrop?.(event);
+                },
+                onDragLeave: (event) => {
+                  if (hasArchivedPayload(event)) {
+                    setArchivedDropColumn((prev) => (prev === key ? "" : prev));
+                    return;
+                  }
+                  baseProps.onDragLeave?.(event);
+                }
+              };
+            })()}
           >
             <h2>{label}</h2>
             {todos.length === 0 ? (
@@ -62,6 +117,7 @@ function TodoBoard({
                       calendarFocusDate={calendarFocusDate}
                       onAssignCategory={onAssignCategory}
                       onRemoveCategory={onRemoveCategory}
+                      onRestoreArchived={onRestoreArchived}
                     />
                   );
                 })}
@@ -96,7 +152,8 @@ TodoBoard.propTypes = {
   categoryLookup: PropTypes.instanceOf(Map),
   calendarFocusDate: PropTypes.string,
   onAssignCategory: PropTypes.func,
-  onRemoveCategory: PropTypes.func
+  onRemoveCategory: PropTypes.func,
+  onRestoreArchived: PropTypes.func
 };
 
 export default TodoBoard;

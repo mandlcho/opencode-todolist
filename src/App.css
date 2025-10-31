@@ -901,6 +901,11 @@
   pointer-events: none;
 }
 
+.archived-todo.archived-todo-dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
 .archived-delete {
   border: none;
   background: transparent;

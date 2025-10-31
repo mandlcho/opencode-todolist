@@ -498,6 +498,97 @@ function App() {
     [setArchivedTodos]
   );
 
+  const restoreArchivedTodo = useCallback(
+    (todoId, { status = "backlog", referenceId = null, position = "after" } = {}) => {
+      if (!todoId) {
+        return;
+      }
+
+      const columnOrder = CARD_COLUMNS.map(({ key }) => key);
+      const normalizeStatus = columnOrder.includes(status) ? status : "backlog";
+      let restoredTodo = null;
+
+      setArchivedTodos((prev) => {
+        const index = prev.findIndex((todo) => todo.id === todoId);
+        if (index === -1) {
+          return prev;
+        }
+        restoredTodo = prev[index];
+        return [...prev.slice(0, index), ...prev.slice(index + 1)];
+      });
+
+      if (!restoredTodo) {
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+      const updatedTodo = {
+        ...restoredTodo,
+        status: normalizeStatus,
+        completed: normalizeStatus === "completed",
+        completedAt:
+          normalizeStatus === "completed"
+            ? restoredTodo.completedAt ?? timestamp
+            : null,
+        activatedAt:
+          normalizeStatus === "active"
+            ? restoredTodo.activatedAt ?? timestamp
+            : normalizeStatus === "completed"
+            ? restoredTodo.activatedAt ?? timestamp
+            : normalizeStatus === "backlog"
+            ? null
+            : restoredTodo.activatedAt,
+        archivedAt: null
+      };
+
+      setTodos((prev) => {
+        const without = prev.filter((todo) => todo.id !== updatedTodo.id);
+
+        let insertionIndex = without.length;
+        let hasReference = false;
+        if (referenceId) {
+          const targetIndex = without.findIndex((todo) => todo.id === referenceId);
+          if (targetIndex !== -1) {
+            insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
+            hasReference = true;
+          }
+        }
+
+        if (!hasReference) {
+          const matchingIndices = [];
+          without.forEach((todo, index) => {
+            if (todo.status === updatedTodo.status) {
+              matchingIndices.push(index);
+            }
+          });
+
+          if (matchingIndices.length > 0) {
+            insertionIndex =
+              position === "after"
+                ? matchingIndices[matchingIndices.length - 1] + 1
+                : matchingIndices[0];
+          } else {
+            const statusIndex = columnOrder.indexOf(updatedTodo.status);
+            const nextStatusIndex = without.findIndex((todo) => {
+              const todoStatusIndex = columnOrder.indexOf(todo.status);
+              return todoStatusIndex !== -1 && todoStatusIndex > statusIndex;
+            });
+            insertionIndex = nextStatusIndex === -1 ? without.length : nextStatusIndex;
+          }
+        }
+
+        const next = [
+          ...without.slice(0, insertionIndex),
+          updatedTodo,
+          ...without.slice(insertionIndex)
+        ];
+
+        return next;
+      });
+    },
+    [setArchivedTodos, setTodos]
+  );
+
   const todoActions = useMemo(
     () => ({
       toggleTodo,
@@ -563,6 +654,7 @@ function App() {
             calendarFocusDate={calendarHoverDate}
             onAssignCategory={handleAssignCategory}
             onRemoveCategory={handleRemoveCategoryFromTodo}
+            onRestoreArchived={restoreArchivedTodo}
           />
           )
         ) : filteredTodos.length === 0 ? (
@@ -582,6 +674,8 @@ function App() {
             calendarFocusDate={calendarHoverDate}
             onAssignCategory={handleAssignCategory}
             onRemoveCategory={handleRemoveCategoryFromTodo}
+            onRestoreArchived={restoreArchivedTodo}
+            listStatus={filter}
           />
         )}
       </section>

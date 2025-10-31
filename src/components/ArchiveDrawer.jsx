@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { TODO_PRIORITIES, DEFAULT_PRIORITY } from "../hooks/useTodos";
 import { formatTimestamp, formatDate } from "../utils/todoFormatting";
+import { ARCHIVED_TODO_DRAG_TYPE } from "../utils/dragTypes";
 
 const DEFAULT_TAG_COLOR = "#6b7280";
 
@@ -10,7 +11,9 @@ function ArchiveDrawer({
   drawerRef = null,
   onRemove,
   categoryLookup = null,
-  onRemoveCategory = null
+  onRemoveCategory = null,
+  onBeginDrag = null,
+  onEndDrag = null
 }) {
   if (todos.length === 0) {
     return null;
@@ -77,8 +80,31 @@ function ArchiveDrawer({
             onRemoveCategory(todo.id, category.id);
           };
 
+          const handleDragStart = (event) => {
+            event.dataTransfer.effectAllowed = "copy";
+            try {
+              event.dataTransfer.setData(ARCHIVED_TODO_DRAG_TYPE, todo.id);
+              event.dataTransfer.setData("text/plain", todo.title);
+            } catch (error) {
+              // ignore setData failures
+            }
+            event.currentTarget.classList.add("archived-todo-dragging");
+            onBeginDrag?.(todo.id);
+          };
+
+          const handleDragEnd = (event) => {
+            event.currentTarget.classList.remove("archived-todo-dragging");
+            onEndDrag?.();
+          };
+
           return (
-            <li key={todo.id} className="archived-todo">
+            <li
+              key={todo.id}
+              className="archived-todo"
+              draggable
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
               <div className="archived-header">
                 <span className="archived-title">{todo.title}</span>
                 <div className="archived-actions">
@@ -145,7 +171,9 @@ ArchiveDrawer.propTypes = {
   }),
   onRemove: PropTypes.func.isRequired,
   categoryLookup: PropTypes.instanceOf(Map),
-  onRemoveCategory: PropTypes.func
+  onRemoveCategory: PropTypes.func,
+  onBeginDrag: PropTypes.func,
+  onEndDrag: PropTypes.func
 };
 
 export default ArchiveDrawer;

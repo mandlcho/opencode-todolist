@@ -6,7 +6,7 @@ import {
   formatDate,
   getNextPriority
 } from "../utils/todoFormatting";
-import { CATEGORY_DRAG_TYPE } from "../utils/dragTypes";
+import { CATEGORY_DRAG_TYPE, ARCHIVED_TODO_DRAG_TYPE } from "../utils/dragTypes";
 
 const hasCategoryPayload = (event) => {
   if (!event || !event.dataTransfer) {
@@ -22,6 +22,17 @@ const hasCategoryPayload = (event) => {
   return Array.from(types).includes(CATEGORY_DRAG_TYPE);
 };
 
+const hasArchivedPayload = (event) => {
+  const types = event?.dataTransfer?.types;
+  if (!types) {
+    return false;
+  }
+  if (typeof types.includes === "function") {
+    return types.includes(ARCHIVED_TODO_DRAG_TYPE);
+  }
+  return Array.from(types).includes(ARCHIVED_TODO_DRAG_TYPE);
+};
+
 function TodoCard({
   todo,
   actions,
@@ -30,7 +41,8 @@ function TodoCard({
   animationRef = null,
   calendarFocusDate = "",
   onAssignCategory = null,
-  onRemoveCategory = null
+  onRemoveCategory = null,
+  onRestoreArchived = null
 }) {
   const [isCategoryDropTarget, setIsCategoryDropTarget] = useState(false);
   const createdLabel = formatTimestamp(todo.createdAt);
@@ -104,7 +116,7 @@ function TodoCard({
   const baseOnDrop = baseDragProps.onDrop;
 
   const handleDragEnter = (event) => {
-    if (hasCategoryPayload(event)) {
+    if (hasCategoryPayload(event) || hasArchivedPayload(event)) {
       event.preventDefault();
       event.stopPropagation();
       setIsCategoryDropTarget(true);
@@ -115,7 +127,7 @@ function TodoCard({
   };
 
   const handleDragOver = (event) => {
-    if (hasCategoryPayload(event)) {
+    if (hasCategoryPayload(event) || hasArchivedPayload(event)) {
       event.preventDefault();
       event.stopPropagation();
       if (!isCategoryDropTarget) {
@@ -128,7 +140,7 @@ function TodoCard({
   };
 
   const handleDragLeave = (event) => {
-    if (hasCategoryPayload(event)) {
+    if (hasCategoryPayload(event) || hasArchivedPayload(event)) {
       event.preventDefault();
       event.stopPropagation();
       setIsCategoryDropTarget(false);
@@ -138,6 +150,24 @@ function TodoCard({
   };
 
   const handleDrop = (event) => {
+    if (hasArchivedPayload(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsCategoryDropTarget(false);
+      const archivedId = event.dataTransfer.getData(ARCHIVED_TODO_DRAG_TYPE);
+      if (archivedId && typeof onRestoreArchived === "function") {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const offsetY = event.clientY - bounds.top;
+        const dropPosition = offsetY > bounds.height / 2 ? "after" : "before";
+        onRestoreArchived(archivedId, {
+          status: todo.status,
+          referenceId: todo.id,
+          position: dropPosition
+        });
+      }
+      return;
+    }
+
     if (hasCategoryPayload(event)) {
       event.preventDefault();
       event.stopPropagation();
@@ -289,7 +319,8 @@ TodoCard.propTypes = {
   ]),
   calendarFocusDate: PropTypes.string,
   onAssignCategory: PropTypes.func,
-  onRemoveCategory: PropTypes.func
+  onRemoveCategory: PropTypes.func,
+  onRestoreArchived: PropTypes.func
 };
 
 export default TodoCard;

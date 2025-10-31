@@ -1,5 +1,17 @@
 import PropTypes from "prop-types";
 import TodoListItem from "./TodoListItem";
+import { ARCHIVED_TODO_DRAG_TYPE } from "../utils/dragTypes";
+
+const hasArchivedPayload = (event) => {
+  const types = event?.dataTransfer?.types;
+  if (!types) {
+    return false;
+  }
+  if (typeof types.includes === "function") {
+    return types.includes(ARCHIVED_TODO_DRAG_TYPE);
+  }
+  return Array.from(types).includes(ARCHIVED_TODO_DRAG_TYPE);
+};
 
 function TodoList({
   todos,
@@ -8,7 +20,9 @@ function TodoList({
   categoryLookup = null,
   calendarFocusDate = "",
   onAssignCategory = null,
-  onRemoveCategory = null
+  onRemoveCategory = null,
+  onRestoreArchived = null,
+  listStatus = "backlog"
 }) {
   if (todos.length === 0) {
     return null;
@@ -16,8 +30,37 @@ function TodoList({
 
   const containerProps = dragAndDrop?.containerProps ?? {};
 
+  const mergedContainerProps = {
+    ...containerProps,
+    onDragOver: (event) => {
+      if (hasArchivedPayload(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "copy";
+        return;
+      }
+      containerProps.onDragOver?.(event);
+    },
+    onDrop: (event) => {
+      if (hasArchivedPayload(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const archivedId = event.dataTransfer.getData(ARCHIVED_TODO_DRAG_TYPE);
+        if (archivedId && typeof onRestoreArchived === "function") {
+          onRestoreArchived(archivedId, {
+            status: listStatus,
+            referenceId: null,
+            position: "after"
+          });
+        }
+        return;
+      }
+      containerProps.onDrop?.(event);
+    }
+  };
+
   return (
-    <ul {...containerProps}>
+    <ul {...mergedContainerProps}>
       {todos.map((todo) => {
         const dragState = dragAndDrop?.getItemProps
           ? dragAndDrop.getItemProps(todo.id)
@@ -36,6 +79,8 @@ function TodoList({
             calendarFocusDate={calendarFocusDate}
             onAssignCategory={onAssignCategory}
             onRemoveCategory={onRemoveCategory}
+            onRestoreArchived={onRestoreArchived}
+            listStatus={listStatus}
           />
         );
       })}
@@ -59,7 +104,9 @@ TodoList.propTypes = {
   categoryLookup: PropTypes.instanceOf(Map),
   calendarFocusDate: PropTypes.string,
   onAssignCategory: PropTypes.func,
-  onRemoveCategory: PropTypes.func
+  onRemoveCategory: PropTypes.func,
+  onRestoreArchived: PropTypes.func,
+  listStatus: PropTypes.string
 };
 
 export default TodoList;

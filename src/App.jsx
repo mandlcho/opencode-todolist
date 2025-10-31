@@ -182,6 +182,32 @@ function App() {
     setTodos
   });
 
+  const dueDateHighlights = useMemo(() => {
+    const priorityOrder = new Map(TODO_PRIORITIES.map((priority, index) => [priority, index]));
+    const map = new Map();
+
+    todos.forEach((todo) => {
+      if (!todo.dueDate || typeof todo.dueDate !== "string") {
+        return;
+      }
+      const iso = todo.dueDate.slice(0, 10);
+      if (!iso) {
+        return;
+      }
+      const current = map.get(iso) ?? { count: 0, priority: "low" };
+      const nextCount = current.count + 1;
+      const candidatePriority = TODO_PRIORITIES.includes(todo.priority)
+        ? todo.priority
+        : DEFAULT_PRIORITY;
+      const currentRank = priorityOrder.get(current.priority) ?? Infinity;
+      const candidateRank = priorityOrder.get(candidatePriority) ?? Infinity;
+      const nextPriority = candidateRank < currentRank ? candidatePriority : current.priority;
+      map.set(iso, { count: nextCount, priority: nextPriority });
+    });
+
+    return Object.fromEntries(map);
+  }, [todos]);
+
   const handleDueDateChange = useCallback((nextValue) => {
     setDueDate(nextValue);
     if (nextValue) {
@@ -335,6 +361,7 @@ function App() {
         onDescriptionChange={setDescription}
         onDueDateChange={handleDueDateChange}
         onSubmit={handleSubmit}
+        dueHighlights={dueDateHighlights}
         filter={filter}
         onFilterChange={setFilter}
         viewMode={viewMode}

@@ -56,11 +56,24 @@ function buildCalendarDays(referenceMonth) {
   return days;
 }
 
-function CalendarPicker({ value, onChange }) {
+function CalendarPicker({ value, onChange, highlights = {} }) {
   const initialSelected = useMemo(() => parseISODate(value) ?? new Date(), [value]);
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(initialSelected.getFullYear(), initialSelected.getMonth(), 1)
   );
+
+  const highlightDetails = useMemo(() => {
+    if (!highlights || typeof highlights !== "object") {
+      return new Map();
+    }
+    return new Map(
+      Object.entries(highlights).map(([iso, detail]) => {
+        const count = Number(detail?.count) || 0;
+        const priority = typeof detail?.priority === "string" ? detail.priority : null;
+        return [iso, { count, priority }];
+      })
+    );
+  }, [highlights]);
 
   useEffect(() => {
     const parsed = parseISODate(value);
@@ -135,11 +148,15 @@ function CalendarPicker({ value, onChange }) {
           });
           const isSelected = selectedIso === iso;
           const isToday = todayIso === iso;
+          const highlight = highlightDetails.get(iso);
+          const dueCount = highlight?.count ?? 0;
+          const highlightPriority = highlight?.priority;
           const classes = [
             "calendar-day",
             inMonth ? null : "outside",
             isSelected ? "selected" : null,
-            isToday ? "today" : null
+            isToday ? "today" : null,
+            dueCount > 0 ? "has-due" : null
           ]
             .filter(Boolean)
             .join(" ");
@@ -151,9 +168,16 @@ function CalendarPicker({ value, onChange }) {
               className={classes}
               onClick={() => handleSelect(iso)}
               aria-pressed={isSelected}
-              aria-label={`select ${label}`}
+              aria-label={`select ${label}${dueCount ? ` (${dueCount} task${dueCount > 1 ? "s" : ""} due)` : ""}`}
             >
-              {date.getDate()}
+              <span className="calendar-day-number">{date.getDate()}</span>
+              {dueCount > 0 ? (
+                <span
+                  className={`calendar-indicator${highlightPriority ? ` priority-${highlightPriority}` : ""}`}
+                  aria-hidden="true"
+                  title={`${dueCount} task${dueCount > 1 ? "s" : ""} due`}
+                />
+              ) : null}
             </button>
           );
         })}
@@ -165,7 +189,8 @@ function CalendarPicker({ value, onChange }) {
 
 CalendarPicker.propTypes = {
   value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
+  highlights: PropTypes.object
 };
 
 export default CalendarPicker;

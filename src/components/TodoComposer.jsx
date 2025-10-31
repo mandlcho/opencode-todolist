@@ -9,6 +9,7 @@ function TodoComposer({
   onDescriptionChange,
   onDueDateChange,
   onSubmit,
+  dueHighlights,
   filter,
   onFilterChange,
   viewMode,
@@ -46,7 +47,11 @@ function TodoComposer({
         </form>
         <div className="composer-calendar">
           <h3>due date</h3>
-          <CalendarPicker value={dueDate} onChange={onDueDateChange} />
+          <CalendarPicker
+            value={dueDate}
+            onChange={onDueDateChange}
+            highlights={dueHighlights}
+          />
         </div>
       </div>
       {error && <p className="composer-error">{error}</p>}
@@ -116,6 +121,7 @@ TodoComposer.propTypes = {
   onDescriptionChange: PropTypes.func.isRequired,
   onDueDateChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
+  dueHighlights: PropTypes.object.isRequired,
   filter: PropTypes.string.isRequired,
   onFilterChange: PropTypes.func.isRequired,
   viewMode: PropTypes.oneOf(["list", "card"]).isRequired,

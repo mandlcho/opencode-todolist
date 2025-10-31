@@ -183,7 +183,9 @@ function App() {
   });
 
   const dueDateHighlights = useMemo(() => {
-    const priorityOrder = new Map(TODO_PRIORITIES.map((priority, index) => [priority, index]));
+    const priorityOrder = new Map(
+      TODO_PRIORITIES.map((priority, index) => [priority, index])
+    );
     const map = new Map();
 
     todos.forEach((todo) => {
@@ -194,18 +196,27 @@ function App() {
       if (!iso) {
         return;
       }
-      const current = map.get(iso) ?? { count: 0, priority: "low" };
-      const nextCount = current.count + 1;
-      const candidatePriority = TODO_PRIORITIES.includes(todo.priority)
+      const priority = TODO_PRIORITIES.includes(todo.priority)
         ? todo.priority
         : DEFAULT_PRIORITY;
-      const currentRank = priorityOrder.get(current.priority) ?? Infinity;
-      const candidateRank = priorityOrder.get(candidatePriority) ?? Infinity;
-      const nextPriority = candidateRank < currentRank ? candidatePriority : current.priority;
-      map.set(iso, { count: nextCount, priority: nextPriority });
+      const existing = map.get(iso);
+      if (existing) {
+        existing.push(priority);
+      } else {
+        map.set(iso, [priority]);
+      }
     });
 
-    return Object.fromEntries(map);
+    return Object.fromEntries(
+      Array.from(map.entries()).map(([iso, priorities]) => {
+        const ordered = [...priorities].sort(
+          (a, b) =>
+            (priorityOrder.get(a) ?? Number.POSITIVE_INFINITY) -
+            (priorityOrder.get(b) ?? Number.POSITIVE_INFINITY)
+        );
+        return [iso, { count: ordered.length, priorities: ordered }];
+      })
+    );
   }, [todos]);
 
   const handleDueDateChange = useCallback((nextValue) => {

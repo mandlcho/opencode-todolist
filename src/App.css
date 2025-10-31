@@ -569,6 +569,11 @@
   width: 100%;
 }
 
+.todo-card .todo-description.empty {
+  min-height: calc(0.75rem * 1.4);
+  visibility: hidden;
+}
+
 .todo-actions {
   display: flex;
   gap: 0.5rem;
@@ -591,6 +596,11 @@
 .card-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.card-actions.empty {
+  min-height: 1.8rem;
+  visibility: hidden;
 }
 
 .todo-dismiss {
@@ -939,7 +949,17 @@
   line-height: 1;
 }
 
+.calendar-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 1.6rem;
+}
+
 .calendar-indicator {
+  display: inline-block;
   width: 0.35rem;
   height: 0.35rem;
   border-radius: 999px;

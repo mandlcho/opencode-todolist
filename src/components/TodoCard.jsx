@@ -1,6 +1,10 @@
 import PropTypes from "prop-types";
 import { TODO_PRIORITIES, DEFAULT_PRIORITY } from "../hooks/useTodos";
-import { formatTimestamp, formatDate, getNextPriority } from "../utils/todoFormatting";
+import {
+  formatTimestamp,
+  formatDate,
+  getNextPriority
+} from "../utils/todoFormatting";
 
 function TodoCard({ todo, actions, dragState = null }) {
   const createdLabel = formatTimestamp(todo.createdAt);
@@ -11,11 +15,18 @@ function TodoCard({ todo, actions, dragState = null }) {
     ? formatTimestamp(todo.completedAt)
     : null;
   const dueLabel = todo.dueDate ? formatDate(todo.dueDate) : null;
+  const hasDescription =
+    typeof todo.description === "string" && todo.description.trim().length > 0;
 
   const currentPriority = TODO_PRIORITIES.includes(todo.priority)
     ? todo.priority
     : DEFAULT_PRIORITY;
   const nextPriority = getNextPriority(currentPriority);
+  const showStart = todo.status === "backlog";
+  const showComplete = todo.status === "active";
+  const hasActions = showStart || showComplete;
+  const dueDisplay = dueLabel ?? "not set";
+  const doneDisplay = completedLabel ?? "not complete";
 
   const className = `todo${todo.completed ? " completed" : ""} todo-card${
     dragState?.isDragging ? " dragging" : ""
@@ -25,7 +36,7 @@ function TodoCard({ todo, actions, dragState = null }) {
       : dragState?.isDropTarget
       ? " card-drop-target"
       : ""
-  }`;
+  }${hasDescription ? " has-description" : " no-description"}`;
 
   return (
     <li className={className} {...(dragState?.dragProps ?? {})}>
@@ -62,36 +73,42 @@ function TodoCard({ todo, actions, dragState = null }) {
           </button>
         </div>
       </div>
-      {todo.description && <p className="todo-description">{todo.description}</p>}
+      <p
+        className={`todo-description${hasDescription ? "" : " empty"}`}
+        aria-hidden={hasDescription ? undefined : true}
+      >
+        {hasDescription ? todo.description : null}
+      </p>
       <div className="todo-footer card-footer">
         <div className="todo-meta">
           <span>created: {createdLabel || "unknown"}</span>
           <span>activated: {activatedLabel ? activatedLabel : "not yet"}</span>
-          {dueLabel && <span>due: {dueLabel}</span>}
-          {completedLabel && <span>done: {completedLabel}</span>}
+          <span>due: {dueDisplay}</span>
+          <span>done: {doneDisplay}</span>
         </div>
-        {(todo.status === "backlog" || todo.status === "active") && (
-          <div className="todo-actions card-actions">
-            {todo.status === "backlog" && (
-              <button
-                type="button"
-                onClick={() => actions.moveToActive(todo.id)}
-                aria-label={`start ${todo.title}`}
-              >
-                start
-              </button>
-            )}
-            {todo.status === "active" && (
-              <button
-                type="button"
-                onClick={() => actions.updateTodoStatus(todo.id, "completed")}
-                aria-label={`mark ${todo.title} as done`}
-              >
-                done
-              </button>
-            )}
-          </div>
-        )}
+        <div
+          className={`todo-actions card-actions${hasActions ? "" : " empty"}`}
+          aria-hidden={hasActions ? undefined : true}
+        >
+          {showStart && (
+            <button
+              type="button"
+              onClick={() => actions.moveToActive(todo.id)}
+              aria-label={`start ${todo.title}`}
+            >
+              start
+            </button>
+          )}
+          {showComplete && (
+            <button
+              type="button"
+              onClick={() => actions.updateTodoStatus(todo.id, "completed")}
+              aria-label={`mark ${todo.title} as done`}
+            >
+              done
+            </button>
+          )}
+        </div>
       </div>
     </li>
   );

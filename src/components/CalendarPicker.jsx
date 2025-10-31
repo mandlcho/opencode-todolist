@@ -68,9 +68,17 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
     }
     return new Map(
       Object.entries(highlights).map(([iso, detail]) => {
-        const count = Number(detail?.count) || 0;
-        const priority = typeof detail?.priority === "string" ? detail.priority : null;
-        return [iso, { count, priority }];
+        const rawPriorities = Array.isArray(detail?.priorities)
+          ? detail.priorities
+          : [];
+        const priorities = rawPriorities.filter(
+          (priority) => typeof priority === "string" && priority.trim()
+        );
+        const count =
+          Number.isFinite(detail?.count) && detail.count > 0
+            ? detail.count
+            : priorities.length;
+        return [iso, { count, priorities }];
       })
     );
   }, [highlights]);
@@ -149,8 +157,8 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
           const isSelected = selectedIso === iso;
           const isToday = todayIso === iso;
           const highlight = highlightDetails.get(iso);
-          const dueCount = highlight?.count ?? 0;
-          const highlightPriority = highlight?.priority;
+          const highlightPriorities = highlight?.priorities ?? [];
+          const dueCount = highlight?.count ?? highlightPriorities.length;
           const classes = [
             "calendar-day",
             inMonth ? null : "outside",
@@ -173,10 +181,20 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
               <span className="calendar-day-number">{date.getDate()}</span>
               {dueCount > 0 ? (
                 <span
-                  className={`calendar-indicator${highlightPriority ? ` priority-${highlightPriority}` : ""}`}
+                  className="calendar-indicators"
                   aria-hidden="true"
                   title={`${dueCount} task${dueCount > 1 ? "s" : ""} due`}
-                />
+                >
+                  {(highlightPriorities.length
+                    ? highlightPriorities
+                    : Array.from({ length: dueCount }, () => "medium")
+                  ).map((priority, index) => (
+                    <span
+                      key={`${iso}-${index}`}
+                      className={`calendar-indicator priority-${priority}`}
+                    />
+                  ))}
+                </span>
               ) : null}
             </button>
           );

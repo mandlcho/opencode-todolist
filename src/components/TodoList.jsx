@@ -1,7 +1,14 @@
 import PropTypes from "prop-types";
 import TodoListItem from "./TodoListItem";
 
-function TodoList({ todos, actions, dragAndDrop = null, categoryLookup = null }) {
+function TodoList({
+  todos,
+  actions,
+  dragAndDrop = null,
+  categoryLookup = null,
+  calendarFocusDate = "",
+  onAssignCategory = null
+}) {
   if (todos.length === 0) {
     return null;
   }
@@ -25,6 +32,8 @@ function TodoList({ todos, actions, dragAndDrop = null, categoryLookup = null })
             onDismiss={actions.handleDismiss}
             dragState={dragState}
             categoryLookup={categoryLookup}
+            calendarFocusDate={calendarFocusDate}
+            onAssignCategory={onAssignCategory}
           />
         );
       })}
@@ -45,7 +54,9 @@ TodoList.propTypes = {
     containerProps: PropTypes.object,
     getItemProps: PropTypes.func
   }),
-  categoryLookup: PropTypes.instanceOf(Map)
+  categoryLookup: PropTypes.instanceOf(Map),
+  calendarFocusDate: PropTypes.string,
+  onAssignCategory: PropTypes.func
 };
 
 export default TodoList;

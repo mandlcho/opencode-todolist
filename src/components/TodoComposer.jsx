@@ -23,6 +23,7 @@ function TodoComposer({
   onToggleCategory,
   onCreateCategory,
   onRemoveCategory,
+  onCalendarHoverDueDate,
   error = ""
 }) {
   return (
@@ -67,6 +68,7 @@ function TodoComposer({
               value={dueDate}
               onChange={onDueDateChange}
               highlights={dueHighlights}
+              onHoverDate={onCalendarHoverDueDate}
             />
           </div>
         </div>
@@ -161,6 +163,7 @@ TodoComposer.propTypes = {
   onToggleCategory: PropTypes.func.isRequired,
   onCreateCategory: PropTypes.func.isRequired,
   onRemoveCategory: PropTypes.func.isRequired,
+  onCalendarHoverDueDate: PropTypes.func,
   error: PropTypes.string
 };
 

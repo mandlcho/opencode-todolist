@@ -1,7 +1,31 @@
 import PropTypes from "prop-types";
+import { useMemo } from "react";
 import TodoCard from "./TodoCard";
+import { useFlipAnimation } from "../hooks/useFlipAnimation";
 
-function TodoBoard({ columns, actions, dragAndDrop = null, categoryLookup = null }) {
+function TodoBoard({
+  columns,
+  actions,
+  dragAndDrop = null,
+  categoryLookup = null,
+  calendarFocusDate = "",
+  onAssignCategory = null
+}) {
+  const cardOrderSignature = useMemo(() => {
+    return columns
+      .map(({ key, todos }) =>
+        todos
+          .map((todo) => `${key}:${todo.id}`)
+          .join("|")
+      )
+      .join("||");
+  }, [columns]);
+
+  const registerCard = useFlipAnimation({
+    isEnabled: Boolean(dragAndDrop),
+    dependencyList: [cardOrderSignature]
+  });
+
   return (
     <div className="todo-board">
       {columns.map(({ key, label, todos }) => {
@@ -33,6 +57,9 @@ function TodoBoard({ columns, actions, dragAndDrop = null, categoryLookup = null
                       actions={actions}
                       dragState={cardDnD}
                       categoryLookup={categoryLookup}
+                      animationRef={registerCard(todo.id)}
+                      calendarFocusDate={calendarFocusDate}
+                      onAssignCategory={onAssignCategory}
                     />
                   );
                 })}
@@ -64,7 +91,9 @@ TodoBoard.propTypes = {
     getColumnProps: PropTypes.func,
     getCardProps: PropTypes.func
   }),
-  categoryLookup: PropTypes.instanceOf(Map)
+  categoryLookup: PropTypes.instanceOf(Map),
+  calendarFocusDate: PropTypes.string,
+  onAssignCategory: PropTypes.func
 };
 
 export default TodoBoard;

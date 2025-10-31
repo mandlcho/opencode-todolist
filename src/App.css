@@ -292,7 +292,7 @@
   justify-content: center;
   text-transform: lowercase;
   letter-spacing: 0.05em;
-  margin-top: 0.5rem;
+  align-self: stretch;
 }
 
 .composer-submit-inline:focus-visible {
@@ -305,7 +305,7 @@
 }
 
 .filter-row {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
@@ -411,7 +411,7 @@
 .todo-list:not(.card-view) .todo {
   cursor: grab;
   position: relative;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease, filter 0.25s ease;
 }
 
 .todo-list:not(.card-view) .todo.dragging {
@@ -443,7 +443,9 @@
 .todo-list.card-view .todo-card {
   cursor: grab;
   position: relative;
-  transition: background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease,
+    filter 0.25s ease;
+  will-change: transform;
 }
 
 .todo-list.card-view .todo-card.dragging {
@@ -454,6 +456,31 @@
 .todo-list.card-view .todo-card.card-drop-target {
   background: var(--color-column-highlight);
   box-shadow: inset 0 0 0 1px var(--color-card-drop-shadow);
+}
+
+.todo-list:not(.card-view) .todo.calendar-muted,
+.todo-list.card-view .todo-card.calendar-muted {
+  filter: grayscale(0.85) blur(2px);
+  opacity: 0.35;
+}
+
+.todo-list:not(.card-view) .todo.calendar-focus {
+  background: color-mix(in srgb, var(--color-column-highlight) 55%, transparent);
+  box-shadow: 0 0 0 1px var(--color-card-drop-shadow);
+}
+
+.todo-list.card-view .todo-card.calendar-focus:not(.card-drop-target) {
+  background: color-mix(in srgb, var(--color-column-highlight) 60%, transparent);
+  box-shadow: 0 0 0 2px var(--color-card-drop-shadow);
+  z-index: 1;
+}
+
+.todo-list:not(.card-view) .todo.category-drop-target,
+.todo-list.card-view .todo-card.category-drop-target {
+  background: color-mix(in srgb, var(--color-column-highlight) 75%, transparent);
+  box-shadow: 0 0 0 2px var(--color-drop-border);
+  filter: none;
+  opacity: 1;
 }
 
 .todo-list.card-view .todo-card.card-drop-target::before {
@@ -632,6 +659,11 @@
 
 .todo-card .todo-category-tags {
   width: 100%;
+}
+
+.todo-category-tags-inline {
+  padding-left: 0;
+  margin-bottom: 0.35rem;
 }
 
 .category-tag {
@@ -1015,6 +1047,11 @@
 .category-chip-selected {
   background: color-mix(in srgb, var(--chip-color, #6b7280) 25%, transparent);
   border-color: color-mix(in srgb, var(--chip-color, #6b7280) 65%, transparent);
+}
+
+.category-chip.category-chip-dragging {
+  opacity: 0.6;
+  cursor: grabbing;
 }
 
 .category-add-form {

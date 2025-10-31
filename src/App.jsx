@@ -31,6 +31,7 @@ function App() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priorityFocus, setPriorityFocus] = useState("");
+  const [calendarHoverDate, setCalendarHoverDate] = useState("");
   const [filter, setFilter] = useState("backlog");
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -154,6 +155,35 @@ function App() {
       );
     },
     [removeCategory, setTodos, setArchivedTodos]
+  );
+
+  const handleAssignCategory = useCallback(
+    (todoId, categoryId) => {
+      if (!todoId || !categoryId) {
+        return;
+      }
+      if (!categories.some((category) => category.id === categoryId)) {
+        return;
+      }
+      setTodos((prev) =>
+        prev.map((todo) => {
+          if (todo.id !== todoId) {
+            return todo;
+          }
+          const currentCategories = Array.isArray(todo.categories)
+            ? todo.categories
+            : [];
+          if (currentCategories.includes(categoryId)) {
+            return todo;
+          }
+          return {
+            ...todo,
+            categories: [...currentCategories, categoryId]
+          };
+        })
+      );
+    },
+    [categories, setTodos]
   );
 
   const archiveCompleted = useCallback(() => {
@@ -301,6 +331,10 @@ function App() {
     if (nextValue) {
       setComposerError("");
     }
+  }, []);
+
+  const handleCalendarHover = useCallback((iso) => {
+    setCalendarHoverDate(iso || "");
   }, []);
 
   const handleSubmit = useCallback(
@@ -463,6 +497,7 @@ function App() {
         onToggleCategory={handleToggleCategory}
         onCreateCategory={handleCreateCategory}
         onRemoveCategory={handleRemoveCategory}
+        onCalendarHoverDueDate={handleCalendarHover}
         error={composerError}
       />
 
@@ -479,6 +514,8 @@ function App() {
             actions={todoActions}
             dragAndDrop={boardDragAndDrop}
             categoryLookup={categoryLookup}
+            calendarFocusDate={calendarHoverDate}
+            onAssignCategory={handleAssignCategory}
           />
           )
         ) : filteredTodos.length === 0 ? (
@@ -495,6 +532,8 @@ function App() {
             actions={todoActions}
             dragAndDrop={listDragAndDrop}
             categoryLookup={categoryLookup}
+            calendarFocusDate={calendarHoverDate}
+            onAssignCategory={handleAssignCategory}
           />
         )}
       </section>

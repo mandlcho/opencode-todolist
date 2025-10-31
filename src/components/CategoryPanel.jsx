@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
+import { CATEGORY_DRAG_TYPE } from "../utils/dragTypes";
 
 function CategoryPanel({
   categories,
@@ -55,6 +56,24 @@ function CategoryPanel({
     onRemoveCategory(category.id);
   };
 
+  const handleDragStart = (event, category) => {
+    if (!category) {
+      return;
+    }
+    event.dataTransfer.effectAllowed = "copy";
+    try {
+      event.dataTransfer.setData(CATEGORY_DRAG_TYPE, category.id);
+      event.dataTransfer.setData("text/plain", category.label);
+    } catch (error) {
+      // ignore dataTransfer failures (e.g., Firefox)
+    }
+    event.currentTarget.classList.add("category-chip-dragging");
+  };
+
+  const handleDragEnd = (event) => {
+    event.currentTarget.classList.remove("category-chip-dragging");
+  };
+
   return (
     <section className="category-panel" aria-label="task categories">
       <div className="category-panel-header">
@@ -90,6 +109,9 @@ function CategoryPanel({
               onContextMenu={(event) => handleContextMenu(event, category)}
               aria-pressed={isSelected}
               title="right click to delete"
+              draggable
+              onDragStart={(event) => handleDragStart(event, category)}
+              onDragEnd={handleDragEnd}
             >
               <span className="category-chip-dot" aria-hidden="true" />
               <span className="category-chip-label">{category.label}</span>

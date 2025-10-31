@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const THEME_STORAGE_KEY = "todo-react-app::theme";
-export const THEME_OPTIONS = ["light", "dark", "system"];
+export const THEME_OPTIONS = ["system", "light", "dark"];
 
 const resolveTheme = (theme, mediaQuery) => {
   if (theme === "system") {

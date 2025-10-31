@@ -56,7 +56,7 @@ function buildCalendarDays(referenceMonth) {
   return days;
 }
 
-function CalendarPicker({ value, onChange, highlights = {} }) {
+function CalendarPicker({ value, onChange, highlights = {}, onHoverDate = null }) {
   const initialSelected = useMemo(() => parseISODate(value) ?? new Date(), [value]);
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(initialSelected.getFullYear(), initialSelected.getMonth(), 1)
@@ -128,6 +128,23 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
     onChange(iso);
   };
 
+  const handleDayPointerEnter = (iso, hasDue) => {
+    if (typeof onHoverDate !== "function") {
+      return;
+    }
+    if (hasDue) {
+      onHoverDate(iso);
+    } else {
+      onHoverDate("");
+    }
+  };
+
+  const handleGridPointerLeave = () => {
+    if (typeof onHoverDate === "function") {
+      onHoverDate("");
+    }
+  };
+
   return (
     <div className="calendar" aria-live="polite">
       <div className="calendar-header">
@@ -141,7 +158,12 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
         </div>
         <span>{monthLabel}</span>
       </div>
-      <div className="calendar-grid" role="grid" aria-label="select due date">
+      <div
+        className="calendar-grid"
+        role="grid"
+        aria-label="select due date"
+        onPointerLeave={handleGridPointerLeave}
+      >
         {WEEKDAYS.map((day) => (
           <span key={day} className="calendar-weekday" aria-hidden="true">
             {day}
@@ -177,6 +199,22 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
               onClick={() => handleSelect(iso)}
               aria-pressed={isSelected}
               aria-label={`select ${label}${dueCount ? ` (${dueCount} task${dueCount > 1 ? "s" : ""} due)` : ""}`}
+              onPointerEnter={() => handleDayPointerEnter(iso, dueCount > 0)}
+              onFocus={() => handleDayPointerEnter(iso, dueCount > 0)}
+              onBlur={(event) => {
+                if (typeof onHoverDate !== "function") {
+                  return;
+                }
+                const nextTarget = event.relatedTarget;
+                if (
+                  nextTarget &&
+                  typeof nextTarget.closest === "function" &&
+                  nextTarget.closest(".calendar-day")
+                ) {
+                  return;
+                }
+                onHoverDate("");
+              }}
             >
               <span className="calendar-day-number">{date.getDate()}</span>
               {dueCount > 0 ? (
@@ -208,7 +246,8 @@ function CalendarPicker({ value, onChange, highlights = {} }) {
 CalendarPicker.propTypes = {
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
-  highlights: PropTypes.object
+  highlights: PropTypes.object,
+  onHoverDate: PropTypes.func
 };
 
 export default CalendarPicker;

@@ -9,6 +9,7 @@ import { useTodos, TODO_PRIORITIES, DEFAULT_PRIORITY } from "./hooks/useTodos";
 import { useListDragAndDrop } from "./hooks/useListDragAndDrop";
 import { useBoardDragAndDrop } from "./hooks/useBoardDragAndDrop";
 import { useThemePreference } from "./hooks/useThemePreference";
+import { useCategories } from "./hooks/useCategories";
 import { PRIORITY_OPTIONS } from "./utils/todoFormatting";
 import "./App.css";
 
@@ -34,11 +35,21 @@ function App() {
   const [viewMode, setViewMode] = useState("list");
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [composerError, setComposerError] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const archiveDrawerRef = useRef(null);
   const archiveToggleRef = useRef(null);
   const isListView = viewMode === "list";
   const isCardView = viewMode === "card";
   const { theme, setTheme } = useThemePreference();
+  const { categories, addCategory } = useCategories();
+
+  const categoryLookup = useMemo(() => {
+    const lookup = new Map();
+    categories.forEach((category) => {
+      lookup.set(category.id, category);
+    });
+    return lookup;
+  }, [categories]);
 
   useEffect(() => {
     if (archivedTodos.length === 0) {
@@ -78,6 +89,28 @@ function App() {
     }
     setPriorityFocus((prev) => (prev === value ? "" : value));
   }, []);
+
+  const handleToggleCategory = useCallback((categoryId) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      }
+      return [...prev, categoryId];
+    });
+  }, []);
+
+  const handleCreateCategory = useCallback(
+    (label) => {
+      const created = addCategory(label);
+      if (created) {
+        setSelectedCategories((prev) =>
+          prev.includes(created.id) ? prev : [...prev, created.id]
+        );
+      }
+      return created;
+    },
+    [addCategory]
+  );
 
   const archiveCompleted = useCallback(() => {
     if (todos.length === 0) {
@@ -244,16 +277,18 @@ function App() {
         completed: false,
         activatedAt: null,
         createdAt: new Date().toISOString(),
-        dueDate: dueDate ? dueDate.trim() : null
+        dueDate: dueDate ? dueDate.trim() : null,
+        categories: [...selectedCategories]
       };
 
       setTodos((prev) => [nextTodo, ...prev]);
       setTitle("");
       setDescription("");
       setDueDate("");
+      setSelectedCategories([]);
       setComposerError("");
     },
-    [title, description, dueDate, setTodos]
+    [title, description, dueDate, setTodos, selectedCategories]
   );
 
   const updateTodoStatus = useCallback(
@@ -379,6 +414,10 @@ function App() {
         columns={CARD_COLUMNS}
         priorityFocus={priorityFocus}
         onPriorityFocus={handlePriorityFocus}
+        categories={categories}
+        selectedCategories={selectedCategories}
+        onToggleCategory={handleToggleCategory}
+        onCreateCategory={handleCreateCategory}
         error={composerError}
       />
 
@@ -390,11 +429,12 @@ function App() {
           todos.length === 0 ? (
             <p className="empty-state">no todos yet. add one above.</p>
           ) : (
-            <TodoBoard
-              columns={boardColumns}
-              actions={todoActions}
-              dragAndDrop={boardDragAndDrop}
-            />
+          <TodoBoard
+            columns={boardColumns}
+            actions={todoActions}
+            dragAndDrop={boardDragAndDrop}
+            categoryLookup={categoryLookup}
+          />
           )
         ) : filteredTodos.length === 0 ? (
           <p className="empty-state">
@@ -409,6 +449,7 @@ function App() {
             todos={filteredTodos}
             actions={todoActions}
             dragAndDrop={listDragAndDrop}
+            categoryLookup={categoryLookup}
           />
         )}
       </section>

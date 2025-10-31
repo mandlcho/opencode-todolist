@@ -32,7 +32,7 @@ describe("App", () => {
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
     fireEvent.change(titleInput, { target: { value: "write docs" } });
     selectCalendarDate();
-    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
 
     const priorityBadge = screen.getByRole("button", {
       name: /priority medium/i
@@ -53,7 +53,7 @@ describe("App", () => {
     render(<App />);
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
-    const addButton = screen.getByRole("button", { name: /add/i });
+    const addButton = screen.getByRole("button", { name: /^add$/i });
 
     const addTodo = (title) => {
       fireEvent.change(titleInput, { target: { value: title } });
@@ -128,7 +128,7 @@ describe("App", () => {
     render(<App />);
 
     const titleInput = screen.getByPlaceholderText("add a task to backlog");
-    const addButton = screen.getByRole("button", { name: /add/i });
+    const addButton = screen.getByRole("button", { name: /^add$/i });
 
     fireEvent.change(titleInput, { target: { value: "archive me" } });
     selectCalendarDate();
@@ -196,5 +196,63 @@ describe("App", () => {
       name: /show archived \(0\)/i
     });
     expect(showArchivedEmptyButton).toBeDisabled();
+  });
+
+  it("allows assigning existing categories to new todos", () => {
+    render(<App />);
+
+    const titleInput = screen.getByPlaceholderText("add a task to backlog");
+    fireEvent.change(titleInput, { target: { value: "categorised task" } });
+    selectCalendarDate();
+
+    const workChip = screen.getByRole("button", { name: /^work$/i });
+    fireEvent.click(workChip);
+
+    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+
+    const todoList = screen.getByRole("list");
+    const todoItem = within(todoList)
+      .getByText("categorised task")
+      .closest("li");
+    expect(todoItem).not.toBeNull();
+    if (!todoItem) {
+      throw new Error("Todo list item not found");
+    }
+    expect(
+      within(todoItem).getByText("work", { selector: ".category-tag" })
+    ).toBeInTheDocument();
+  });
+
+  it("lets users create a custom category and apply it to a todo", () => {
+    render(<App />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /add a new category/i })
+    );
+
+    const categoryInput = screen.getByPlaceholderText("add category name");
+    fireEvent.change(categoryInput, { target: { value: "fitness" } });
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    const customChip = screen.getByRole("button", { name: /^fitness$/i });
+    expect(customChip).toBeInTheDocument();
+
+    const titleInput = screen.getByPlaceholderText("add a task to backlog");
+    fireEvent.change(titleInput, { target: { value: "morning workout" } });
+    selectCalendarDate();
+
+    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+
+    const todoList = screen.getByRole("list");
+    const todoItem = within(todoList)
+      .getByText("morning workout")
+      .closest("li");
+    expect(todoItem).not.toBeNull();
+    if (!todoItem) {
+      throw new Error("Todo list item not found");
+    }
+    expect(
+      within(todoItem).getByText("fitness", { selector: ".category-tag" })
+    ).toBeInTheDocument();
   });
 });

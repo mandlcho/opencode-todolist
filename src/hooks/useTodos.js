@@ -43,6 +43,17 @@ const normalizeTodo = (todo, { archived = false } = {}) => {
       : archived
       ? completedAt ?? null
       : null;
+  const categories = Array.isArray(todo.categories)
+    ? Array.from(
+        new Set(
+          todo.categories
+            .map((category) =>
+              typeof category === "string" ? category.trim() : null
+            )
+            .filter(Boolean)
+        )
+      )
+    : [];
 
   return {
     ...todo,
@@ -54,7 +65,8 @@ const normalizeTodo = (todo, { archived = false } = {}) => {
     completed: isCompleted,
     priority,
     archivedAt,
-    dueDate
+    dueDate,
+    categories
   };
 };
 

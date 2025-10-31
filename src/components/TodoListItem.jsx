@@ -9,7 +9,8 @@ function TodoListItem({
   onUpdateStatus,
   onUpdatePriority,
   onDismiss,
-  dragState = null
+  dragState = null,
+  categoryLookup = null
 }) {
   const createdLabel = formatTimestamp(todo.createdAt);
   const activatedLabel = todo.activatedAt
@@ -25,6 +26,15 @@ function TodoListItem({
     : DEFAULT_PRIORITY;
 
   const nextPriority = getNextPriority(currentPriority);
+  const todoCategories = Array.isArray(todo.categories)
+    ? todo.categories
+        .map((categoryId) =>
+          categoryLookup && typeof categoryLookup.get === "function"
+            ? categoryLookup.get(categoryId)
+            : null
+        )
+        .filter(Boolean)
+    : [];
 
   const className = `todo${todo.completed ? " completed" : ""}${
     dragState?.isDragging ? " dragging" : ""
@@ -94,6 +104,19 @@ function TodoListItem({
         </div>
       </div>
       {todo.description && <p className="todo-description">{todo.description}</p>}
+      {todoCategories.length > 0 ? (
+        <div className="todo-category-tags">
+          {todoCategories.map((category) => (
+            <span
+              key={category.id}
+              className="category-tag"
+              style={{ "--tag-color": category.color }}
+            >
+              {category.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="todo-footer">
         <div className="todo-meta">
           <span>created: {createdLabel || "unknown"}</span>
@@ -118,7 +141,8 @@ TodoListItem.propTypes = {
     createdAt: PropTypes.string,
     activatedAt: PropTypes.string,
     completedAt: PropTypes.string,
-    dueDate: PropTypes.string
+    dueDate: PropTypes.string,
+    categories: PropTypes.arrayOf(PropTypes.string)
   }).isRequired,
   onToggle: PropTypes.func.isRequired,
   onMoveToActive: PropTypes.func.isRequired,
@@ -129,7 +153,8 @@ TodoListItem.propTypes = {
     dragProps: PropTypes.object,
     isDragging: PropTypes.bool,
     dropPosition: PropTypes.oneOf(["before", "after", null])
-  })
+  }),
+  categoryLookup: PropTypes.instanceOf(Map)
 };
 
 export default TodoListItem;

@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import CalendarPicker from "./CalendarPicker";
+import CategoryPanel from "./CategoryPanel";
 
 function TodoComposer({
   title,
@@ -17,6 +18,10 @@ function TodoComposer({
   priorityFocus,
   onPriorityFocus,
   priorityOptions,
+  categories,
+  selectedCategories,
+  onToggleCategory,
+  onCreateCategory,
   error = ""
 }) {
   return (
@@ -45,13 +50,21 @@ function TodoComposer({
           />
           <button type="submit">add</button>
         </form>
-        <div className="composer-calendar">
-          <h3>due date</h3>
-          <CalendarPicker
-            value={dueDate}
-            onChange={onDueDateChange}
-            highlights={dueHighlights}
+        <div className="composer-sidebar">
+          <CategoryPanel
+            categories={categories}
+            selected={selectedCategories}
+            onToggleCategory={onToggleCategory}
+            onCreateCategory={onCreateCategory}
           />
+          <div className="composer-calendar">
+            <h3>due date</h3>
+            <CalendarPicker
+              value={dueDate}
+              onChange={onDueDateChange}
+              highlights={dueHighlights}
+            />
+          </div>
         </div>
       </div>
       {error && <p className="composer-error">{error}</p>}
@@ -133,6 +146,16 @@ TodoComposer.propTypes = {
   ).isRequired,
   priorityFocus: PropTypes.string.isRequired,
   onPriorityFocus: PropTypes.func.isRequired,
+  categories: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired
+    })
+  ).isRequired,
+  selectedCategories: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onToggleCategory: PropTypes.func.isRequired,
+  onCreateCategory: PropTypes.func.isRequired,
   error: PropTypes.string
 };
 

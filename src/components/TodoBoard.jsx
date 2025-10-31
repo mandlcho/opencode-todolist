@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import TodoCard from "./TodoCard";
 
-function TodoBoard({ columns, actions, dragAndDrop = null }) {
+function TodoBoard({ columns, actions, dragAndDrop = null, categoryLookup = null }) {
   return (
     <div className="todo-board">
       {columns.map(({ key, label, todos }) => {
@@ -32,6 +32,7 @@ function TodoBoard({ columns, actions, dragAndDrop = null }) {
                       todo={todo}
                       actions={actions}
                       dragState={cardDnD}
+                      categoryLookup={categoryLookup}
                     />
                   );
                 })}
@@ -62,7 +63,8 @@ TodoBoard.propTypes = {
   dragAndDrop: PropTypes.shape({
     getColumnProps: PropTypes.func,
     getCardProps: PropTypes.func
-  })
+  }),
+  categoryLookup: PropTypes.instanceOf(Map)
 };
 
 export default TodoBoard;

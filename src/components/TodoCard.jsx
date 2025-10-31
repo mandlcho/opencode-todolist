@@ -6,7 +6,7 @@ import {
   getNextPriority
 } from "../utils/todoFormatting";
 
-function TodoCard({ todo, actions, dragState = null }) {
+function TodoCard({ todo, actions, dragState = null, categoryLookup = null }) {
   const createdLabel = formatTimestamp(todo.createdAt);
   const activatedLabel = todo.activatedAt
     ? formatTimestamp(todo.activatedAt)
@@ -27,6 +27,15 @@ function TodoCard({ todo, actions, dragState = null }) {
   const hasActions = showStart || showComplete;
   const dueDisplay = dueLabel ?? "not set";
   const doneDisplay = completedLabel ?? "not complete";
+  const todoCategories = Array.isArray(todo.categories)
+    ? todo.categories
+        .map((categoryId) =>
+          categoryLookup && typeof categoryLookup.get === "function"
+            ? categoryLookup.get(categoryId)
+            : null
+        )
+        .filter(Boolean)
+    : [];
 
   const className = `todo${todo.completed ? " completed" : ""} todo-card${
     dragState?.isDragging ? " dragging" : ""
@@ -79,6 +88,19 @@ function TodoCard({ todo, actions, dragState = null }) {
       >
         {hasDescription ? todo.description : null}
       </p>
+      {todoCategories.length > 0 ? (
+        <div className="todo-category-tags">
+          {todoCategories.map((category) => (
+            <span
+              key={category.id}
+              className="category-tag"
+              style={{ "--tag-color": category.color }}
+            >
+              {category.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="todo-footer card-footer">
         <div className="todo-meta">
           <span>created: {createdLabel || "unknown"}</span>
@@ -125,7 +147,8 @@ TodoCard.propTypes = {
     createdAt: PropTypes.string,
     activatedAt: PropTypes.string,
     completedAt: PropTypes.string,
-    dueDate: PropTypes.string
+    dueDate: PropTypes.string,
+    categories: PropTypes.arrayOf(PropTypes.string)
   }).isRequired,
   actions: PropTypes.shape({
     toggleTodo: PropTypes.func.isRequired,
@@ -139,7 +162,8 @@ TodoCard.propTypes = {
     isDragging: PropTypes.bool,
     isDropTarget: PropTypes.bool,
     dropPosition: PropTypes.oneOf(["before", "after", null])
-  })
+  }),
+  categoryLookup: PropTypes.instanceOf(Map)
 };
 
 export default TodoCard;

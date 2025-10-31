@@ -666,6 +666,11 @@
   margin-bottom: 0.35rem;
 }
 
+.archived-category-tags {
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
 .category-tag {
   display: inline-flex;
   align-items: center;

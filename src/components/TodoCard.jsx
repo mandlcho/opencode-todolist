@@ -29,7 +29,8 @@ function TodoCard({
   categoryLookup = null,
   animationRef = null,
   calendarFocusDate = "",
-  onAssignCategory = null
+  onAssignCategory = null,
+  onRemoveCategory = null
 }) {
   const [isCategoryDropTarget, setIsCategoryDropTarget] = useState(false);
   const createdLabel = formatTimestamp(todo.createdAt);
@@ -79,6 +80,22 @@ function TodoCard({
   }${isCalendarMuted ? " calendar-muted" : ""}${
     isCategoryDropTarget ? " category-drop-target" : ""
   }`;
+
+  const handleCategoryContextMenu = (event, category) => {
+    if (!category || typeof onRemoveCategory !== "function") {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const label = category.label ?? "this label";
+    const shouldRemove = window.confirm(
+      `remove label "${label}" from "${todo.title}"?`
+    );
+    if (!shouldRemove) {
+      return;
+    }
+    onRemoveCategory(todo.id, category.id);
+  };
 
   const baseDragProps = dragState?.dragProps ?? {};
   const baseOnDragEnter = baseDragProps.onDragEnter;
@@ -197,6 +214,8 @@ function TodoCard({
                   key={category.id}
                   className="category-tag"
                   style={{ "--tag-color": category.color }}
+                  onContextMenu={(event) => handleCategoryContextMenu(event, category)}
+                  title="right click to remove label"
                 >
                   {category.label}
                 </span>
@@ -269,7 +288,8 @@ TodoCard.propTypes = {
     PropTypes.shape({ current: PropTypes.any })
   ]),
   calendarFocusDate: PropTypes.string,
-  onAssignCategory: PropTypes.func
+  onAssignCategory: PropTypes.func,
+  onRemoveCategory: PropTypes.func
 };
 
 export default TodoCard;

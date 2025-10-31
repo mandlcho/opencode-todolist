@@ -7,7 +7,8 @@ function TodoList({
   dragAndDrop = null,
   categoryLookup = null,
   calendarFocusDate = "",
-  onAssignCategory = null
+  onAssignCategory = null,
+  onRemoveCategory = null
 }) {
   if (todos.length === 0) {
     return null;
@@ -34,6 +35,7 @@ function TodoList({
             categoryLookup={categoryLookup}
             calendarFocusDate={calendarFocusDate}
             onAssignCategory={onAssignCategory}
+            onRemoveCategory={onRemoveCategory}
           />
         );
       })}
@@ -56,7 +58,8 @@ TodoList.propTypes = {
   }),
   categoryLookup: PropTypes.instanceOf(Map),
   calendarFocusDate: PropTypes.string,
-  onAssignCategory: PropTypes.func
+  onAssignCategory: PropTypes.func,
+  onRemoveCategory: PropTypes.func
 };
 
 export default TodoList;

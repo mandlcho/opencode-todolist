@@ -9,7 +9,8 @@ function TodoBoard({
   dragAndDrop = null,
   categoryLookup = null,
   calendarFocusDate = "",
-  onAssignCategory = null
+  onAssignCategory = null,
+  onRemoveCategory = null
 }) {
   const cardOrderSignature = useMemo(() => {
     return columns
@@ -60,6 +61,7 @@ function TodoBoard({
                       animationRef={registerCard(todo.id)}
                       calendarFocusDate={calendarFocusDate}
                       onAssignCategory={onAssignCategory}
+                      onRemoveCategory={onRemoveCategory}
                     />
                   );
                 })}
@@ -93,7 +95,8 @@ TodoBoard.propTypes = {
   }),
   categoryLookup: PropTypes.instanceOf(Map),
   calendarFocusDate: PropTypes.string,
-  onAssignCategory: PropTypes.func
+  onAssignCategory: PropTypes.func,
+  onRemoveCategory: PropTypes.func
 };
 
 export default TodoBoard;

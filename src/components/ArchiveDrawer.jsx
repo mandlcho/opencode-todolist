@@ -2,7 +2,16 @@ import PropTypes from "prop-types";
 import { TODO_PRIORITIES, DEFAULT_PRIORITY } from "../hooks/useTodos";
 import { formatTimestamp, formatDate } from "../utils/todoFormatting";
 
-function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
+const DEFAULT_TAG_COLOR = "#6b7280";
+
+function ArchiveDrawer({
+  todos,
+  isOpen,
+  drawerRef = null,
+  onRemove,
+  categoryLookup = null,
+  onRemoveCategory = null
+}) {
   if (todos.length === 0) {
     return null;
   }
@@ -30,6 +39,44 @@ function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
             ? formatTimestamp(todo.completedAt)
             : null;
           const dueLabel = todo.dueDate ? formatDate(todo.dueDate) : null;
+          const todoCategories = Array.isArray(todo.categories)
+            ? todo.categories
+                .map((categoryId) => {
+                  const existing =
+                    categoryLookup && typeof categoryLookup.get === "function"
+                      ? categoryLookup.get(categoryId)
+                      : null;
+                  if (existing) {
+                    return existing;
+                  }
+                  if (typeof categoryId === "string" && categoryId.trim()) {
+                    return {
+                      id: categoryId,
+                      label: categoryId.trim(),
+                      color: DEFAULT_TAG_COLOR
+                    };
+                  }
+                  return null;
+                })
+                .filter(Boolean)
+            : [];
+
+          const handleCategoryContextMenu = (event, category) => {
+            if (!category || typeof onRemoveCategory !== "function") {
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            const label = category.label ?? "this label";
+            const shouldRemove = window.confirm(
+              `remove label "${label}" from "${todo.title}"?`
+            );
+            if (!shouldRemove) {
+              return;
+            }
+            onRemoveCategory(todo.id, category.id);
+          };
+
           return (
             <li key={todo.id} className="archived-todo">
               <div className="archived-header">
@@ -59,6 +106,23 @@ function ArchiveDrawer({ todos, isOpen, drawerRef = null, onRemove }) {
                 {todo.description || "\u00a0"}
               </p>
               <div className="archived-meta">
+                {todoCategories.length > 0 ? (
+                  <div className="todo-category-tags todo-category-tags-inline archived-category-tags">
+                    {todoCategories.map((category) => (
+                      <span
+                        key={category.id}
+                        className="category-tag"
+                        style={{ "--tag-color": category.color || DEFAULT_TAG_COLOR }}
+                        onContextMenu={(event) =>
+                          handleCategoryContextMenu(event, category)
+                        }
+                        title="right click to remove label"
+                      >
+                        {category.label}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {archivedLabel && <span>archived: {archivedLabel}</span>}
                 {dueLabel && <span>due: {dueLabel}</span>}
                 {completedLabel && archivedLabel !== completedLabel && (
@@ -79,7 +143,9 @@ ArchiveDrawer.propTypes = {
   drawerRef: PropTypes.shape({
     current: PropTypes.any
   }),
-  onRemove: PropTypes.func.isRequired
+  onRemove: PropTypes.func.isRequired,
+  categoryLookup: PropTypes.instanceOf(Map),
+  onRemoveCategory: PropTypes.func
 };
 
 export default ArchiveDrawer;

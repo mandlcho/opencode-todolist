@@ -452,6 +452,52 @@ function App() {
     [setArchivedTodos]
   );
 
+  const handleRemoveCategoryFromTodo = useCallback(
+    (todoId, categoryId) => {
+      if (!todoId || !categoryId) {
+        return;
+      }
+      setTodos((prev) =>
+        prev.map((todo) => {
+          if (todo.id !== todoId || !Array.isArray(todo.categories)) {
+            return todo;
+          }
+          if (!todo.categories.includes(categoryId)) {
+            return todo;
+          }
+          return {
+            ...todo,
+            categories: todo.categories.filter((category) => category !== categoryId)
+          };
+        })
+      );
+    },
+    [setTodos]
+  );
+
+  const handleRemoveCategoryFromArchived = useCallback(
+    (todoId, categoryId) => {
+      if (!todoId || !categoryId) {
+        return;
+      }
+      setArchivedTodos((prev) =>
+        prev.map((todo) => {
+          if (todo.id !== todoId || !Array.isArray(todo.categories)) {
+            return todo;
+          }
+          if (!todo.categories.includes(categoryId)) {
+            return todo;
+          }
+          return {
+            ...todo,
+            categories: todo.categories.filter((category) => category !== categoryId)
+          };
+        })
+      );
+    },
+    [setArchivedTodos]
+  );
+
   const todoActions = useMemo(
     () => ({
       toggleTodo,
@@ -516,6 +562,7 @@ function App() {
             categoryLookup={categoryLookup}
             calendarFocusDate={calendarHoverDate}
             onAssignCategory={handleAssignCategory}
+            onRemoveCategory={handleRemoveCategoryFromTodo}
           />
           )
         ) : filteredTodos.length === 0 ? (
@@ -534,6 +581,7 @@ function App() {
             categoryLookup={categoryLookup}
             calendarFocusDate={calendarHoverDate}
             onAssignCategory={handleAssignCategory}
+            onRemoveCategory={handleRemoveCategoryFromTodo}
           />
         )}
       </section>
@@ -552,6 +600,8 @@ function App() {
         isOpen={isArchiveOpen}
         drawerRef={archiveDrawerRef}
         onRemove={removeArchivedTodo}
+        categoryLookup={categoryLookup}
+        onRemoveCategory={handleRemoveCategoryFromArchived}
       />
     </main>
   );

@@ -5,7 +5,8 @@ function CategoryPanel({
   categories,
   selected,
   onToggleCategory,
-  onCreateCategory
+  onCreateCategory,
+  onRemoveCategory
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newLabel, setNewLabel] = useState("");
@@ -43,6 +44,17 @@ function CategoryPanel({
     setError("");
   };
 
+  const handleContextMenu = (event, category) => {
+    event.preventDefault();
+    const shouldRemove = window.confirm(
+      `delete category "${category.label}"?`
+    );
+    if (!shouldRemove) {
+      return;
+    }
+    onRemoveCategory(category.id);
+  };
+
   return (
     <section className="category-panel" aria-label="task categories">
       <div className="category-panel-header">
@@ -75,7 +87,9 @@ function CategoryPanel({
               }`}
               style={{ "--chip-color": category.color }}
               onClick={() => handleToggle(category.id)}
+              onContextMenu={(event) => handleContextMenu(event, category)}
               aria-pressed={isSelected}
+              title="right click to delete"
             >
               <span className="category-chip-dot" aria-hidden="true" />
               <span className="category-chip-label">{category.label}</span>
@@ -119,7 +133,8 @@ CategoryPanel.propTypes = {
   ).isRequired,
   selected: PropTypes.arrayOf(PropTypes.string).isRequired,
   onToggleCategory: PropTypes.func.isRequired,
-  onCreateCategory: PropTypes.func.isRequired
+  onCreateCategory: PropTypes.func.isRequired,
+  onRemoveCategory: PropTypes.func.isRequired
 };
 
 export default CategoryPanel;

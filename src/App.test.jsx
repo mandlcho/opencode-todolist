@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import App from "./App";
 
@@ -254,5 +254,42 @@ describe("App", () => {
     expect(
       within(todoItem).getByText("fitness", { selector: ".category-tag" })
     ).toBeInTheDocument();
+  });
+
+  it("removes categories via right click and clears them from todos", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<App />);
+
+    const titleInput = screen.getByPlaceholderText("add a task to backlog");
+    fireEvent.change(titleInput, { target: { value: "tagged task" } });
+    selectCalendarDate();
+
+    const personalChip = screen.getByRole("button", { name: /^personal$/i });
+    fireEvent.click(personalChip);
+    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+
+    const list = screen.getByRole("list");
+    const todoItem = within(list).getByText("tagged task").closest("li");
+    if (!todoItem) {
+      throw new Error("Todo item not found");
+    }
+    expect(
+      within(todoItem).getByText("personal", { selector: ".category-tag" })
+    ).toBeInTheDocument();
+
+    fireEvent.contextMenu(personalChip);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /^personal$/i })
+      ).toBeNull()
+    );
+    expect(
+      within(todoItem).queryByText("personal", {
+        selector: ".category-tag"
+      })
+    ).toBeNull();
+
+    confirmSpy.mockRestore();
   });
 });

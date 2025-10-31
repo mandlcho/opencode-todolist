@@ -22,12 +22,13 @@ function TodoComposer({
   selectedCategories,
   onToggleCategory,
   onCreateCategory,
+  onRemoveCategory,
   error = ""
 }) {
   return (
     <section className="composer">
       <div className="composer-layout">
-        <form onSubmit={onSubmit}>
+        <form id="todo-composer-form" onSubmit={onSubmit}>
           <input
             type="text"
             name="title"
@@ -48,7 +49,9 @@ function TodoComposer({
             rows={2}
             className="composer-textarea"
           />
-          <button type="submit">add</button>
+          <button type="submit" className="composer-submit-inline">
+            add
+          </button>
         </form>
         <div className="composer-sidebar">
           <CategoryPanel
@@ -56,6 +59,7 @@ function TodoComposer({
             selected={selectedCategories}
             onToggleCategory={onToggleCategory}
             onCreateCategory={onCreateCategory}
+            onRemoveCategory={onRemoveCategory}
           />
           <div className="composer-calendar">
             <h3>due date</h3>
@@ -156,6 +160,7 @@ TodoComposer.propTypes = {
   selectedCategories: PropTypes.arrayOf(PropTypes.string).isRequired,
   onToggleCategory: PropTypes.func.isRequired,
   onCreateCategory: PropTypes.func.isRequired,
+  onRemoveCategory: PropTypes.func.isRequired,
   error: PropTypes.string
 };
 

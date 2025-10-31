@@ -144,8 +144,26 @@ export function useCategories() {
     []
   );
 
+  const removeCategory = useCallback((categoryId) => {
+    if (!categoryId) {
+      return null;
+    }
+    let removedCategory = null;
+    setCategories((prev) =>
+      prev.filter((category) => {
+        if (category.id === categoryId) {
+          removedCategory = category;
+          return false;
+        }
+        return true;
+      })
+    );
+    return removedCategory;
+  }, []);
+
   return {
     categories,
-    addCategory: addCategoryAndGet
+    addCategory: addCategoryAndGet,
+    removeCategory
   };
 }

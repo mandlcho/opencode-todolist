@@ -1,30 +1,31 @@
 import PropTypes from "prop-types";
 import { THEME_OPTIONS } from "../hooks/useThemePreference";
 
-const LABELS = {
-  light: "light",
-  dark: "dark",
-  system: "system"
+const getNextTheme = (current) => {
+  const index = THEME_OPTIONS.indexOf(current);
+  if (index === -1) {
+    return THEME_OPTIONS[0];
+  }
+  return THEME_OPTIONS[(index + 1) % THEME_OPTIONS.length];
 };
 
 function ThemeToggle({ value, onChange }) {
+  const nextTheme = getNextTheme(value);
+  const ariaLabel = `toggle theme (current: ${value}, next: ${nextTheme})`;
+
   return (
-    <div className="theme-toggle" role="group" aria-label="theme mode">
-      {THEME_OPTIONS.map((option) => {
-        const isActive = value === option;
-        return (
-          <button
-            key={option}
-            type="button"
-            className={isActive ? "active" : ""}
-            onClick={() => onChange(option)}
-            aria-pressed={isActive}
-          >
-            {LABELS[option]}
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      className={`theme-toggle-button theme-${value}`}
+      onClick={() => onChange(nextTheme)}
+      aria-label={ariaLabel}
+      title={`switch theme (current: ${value})`}
+    >
+      <span className="theme-toggle-icon" aria-hidden="true">
+        💡
+      </span>
+      <span className="theme-toggle-text">{value}</span>
+    </button>
   );
 }
 

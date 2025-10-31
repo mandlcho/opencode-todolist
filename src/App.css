@@ -19,6 +19,9 @@
   --color-priority-medium: #ff9800;
   --color-priority-low: #388e3c;
   --calendar-filter: none;
+  --composer-panel-width: clamp(18rem, 40vw, 20rem);
+  --composer-description-size: var(--composer-panel-width);
+  --composer-control-height: 2.4rem;
 }
 
 [data-theme="dark"] {
@@ -42,6 +45,7 @@
   --color-priority-medium: #fbbf24;
   --color-priority-low: #34d399;
   --calendar-filter: invert(0.85);
+  --composer-panel-width: clamp(18rem, 40vw, 20rem);
 }
 
 .app-shell {
@@ -93,35 +97,46 @@
   justify-content: flex-end;
 }
 
-.theme-toggle {
+.theme-toggle-button {
   display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
-  overflow: hidden;
-}
-
-.theme-toggle button {
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  padding: 0.4rem 0.75rem;
-  text-transform: lowercase;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.theme-toggle button:hover,
-.theme-toggle button:focus-visible {
-  background: color-mix(in srgb, var(--color-toggle-active) 80%, transparent);
+  background: var(--color-surface);
   color: var(--color-text);
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  text-transform: lowercase;
+}
+
+.theme-toggle-button:hover,
+.theme-toggle-button:focus-visible {
+  background: color-mix(in srgb, var(--color-toggle-active) 60%, transparent);
+  border-color: var(--color-border-strong);
   outline: none;
 }
 
-.theme-toggle button.active {
-  background: var(--color-toggle-active);
-  color: var(--color-text);
-  font-weight: 600;
+.theme-toggle-button.theme-dark {
+  background: color-mix(in srgb, var(--color-toggle-active) 40%, transparent);
+}
+
+.theme-toggle-button.theme-system {
+  border-style: dashed;
+}
+
+.theme-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-text {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
 }
 
 .view-option {
@@ -140,9 +155,10 @@
 
 .composer-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) var(--composer-panel-width);
   gap: 1.25rem;
   align-items: stretch;
+  justify-content: flex-start;
 }
 
 .composer form {
@@ -150,7 +166,6 @@
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-start;
-  max-width: 560px;
   width: 100%;
 }
 
@@ -158,6 +173,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: var(--composer-panel-width);
 }
 
 .composer input[type="text"],
@@ -170,6 +186,7 @@
   line-height: 1.4;
   background: var(--color-surface);
   color: var(--color-text);
+  box-sizing: border-box;
 }
 
 .composer input[type="text"]::placeholder,
@@ -180,24 +197,17 @@
 }
 
 .composer-input {
-  min-height: 2.25rem;
+  min-height: var(--composer-control-height);
 }
 
 .composer-textarea {
-  resize: vertical;
-  min-height: 3.5rem;
-  width: 100%;
+  height: var(--composer-description-size);
+  min-height: var(--composer-description-size);
+  resize: none;
 }
 
 
-.composer button[type="submit"] {
-  border: 1px solid var(--color-border-strong);
-  border-radius: 0;
-  padding: 0.5rem 1.25rem;
-  background: var(--color-button-bg);
-  color: var(--color-text);
-  cursor: pointer;
-}
+
 
 .priority-focus-filter {
   margin-left: auto;
@@ -225,6 +235,10 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  min-height: var(--composer-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .priority-focus-button:focus-visible {
@@ -264,6 +278,32 @@
   background: color-mix(in srgb, var(--color-priority-low) 12%, transparent);
 }
 
+
+.composer-submit-inline {
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-button-bg);
+  color: var(--color-text);
+  padding: 0 1.25rem;
+  min-height: var(--composer-control-height);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
+}
+
+.composer-submit-inline:focus-visible {
+  outline: 2px solid var(--color-border-strong);
+  outline-offset: 2px;
+}
+
+.composer-submit-mobile {
+  display: none;
+}
+
 .filter-row {
   margin-top: 1rem;
   display: flex;
@@ -290,6 +330,10 @@
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
+  min-height: var(--composer-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filters button.active {
@@ -859,21 +903,33 @@
     flex: 1;
   }
 
-  .theme-toggle {
+  .theme-toggle-button {
     width: 100%;
-  }
-
-  .theme-toggle button {
-    flex: 1;
-    text-align: center;
+    justify-content: center;
   }
 
   .composer form {
     flex-direction: column;
+    width: 100%;
   }
 
-  .composer button[type="submit"] {
+  .composer-sidebar {
     width: 100%;
+  }
+
+  .composer-submit-inline {
+    width: 100%;
+  }
+
+  .composer-submit-mobile {
+    display: inline-flex;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .composer-textarea {
+    height: 10rem;
+    min-height: 10rem;
   }
 
   .composer-layout {
@@ -882,6 +938,12 @@
 
   .composer-calendar {
     order: -1;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
   }
 }
 .category-panel {

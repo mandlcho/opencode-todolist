@@ -41,7 +41,7 @@ function App() {
   const isListView = viewMode === "list";
   const isCardView = viewMode === "card";
   const { theme, setTheme } = useThemePreference();
-  const { categories, addCategory } = useCategories();
+  const { categories, addCategory, removeCategory } = useCategories();
 
   const categoryLookup = useMemo(() => {
     const lookup = new Map();
@@ -110,6 +110,50 @@ function App() {
       return created;
     },
     [addCategory]
+  );
+
+  const handleRemoveCategory = useCallback(
+    (categoryId) => {
+      if (!categoryId) {
+        return;
+      }
+      const removed = removeCategory(categoryId);
+      if (!removed) {
+        return;
+      }
+      setSelectedCategories((prev) =>
+        prev.filter((id) => id !== categoryId)
+      );
+      setTodos((prev) =>
+        prev.map((todo) => {
+          if (!Array.isArray(todo.categories) || todo.categories.length === 0) {
+            return todo;
+          }
+          if (!todo.categories.includes(categoryId)) {
+            return todo;
+          }
+          const nextCategories = todo.categories.filter(
+            (category) => category !== categoryId
+          );
+          return { ...todo, categories: nextCategories };
+        })
+      );
+      setArchivedTodos((prev) =>
+        prev.map((todo) => {
+          if (!Array.isArray(todo.categories) || todo.categories.length === 0) {
+            return todo;
+          }
+          if (!todo.categories.includes(categoryId)) {
+            return todo;
+          }
+          const nextCategories = todo.categories.filter(
+            (category) => category !== categoryId
+          );
+          return { ...todo, categories: nextCategories };
+        })
+      );
+    },
+    [removeCategory, setTodos, setArchivedTodos]
   );
 
   const archiveCompleted = useCallback(() => {
@@ -418,6 +462,7 @@ function App() {
         selectedCategories={selectedCategories}
         onToggleCategory={handleToggleCategory}
         onCreateCategory={handleCreateCategory}
+        onRemoveCategory={handleRemoveCategory}
         error={composerError}
       />
 

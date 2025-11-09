@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const repoBase = "/opencode-todolist/";
+const repoBase = "/the-kanban/";
 
 export default defineConfig({
   plugins: [react()],

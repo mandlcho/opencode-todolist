@@ -54,7 +54,7 @@
   color: var(--color-text);
   padding: 2rem 1.5rem;
   padding-bottom: 9rem;
-  font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
+  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
